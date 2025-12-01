@@ -153,14 +153,14 @@ export default function CalendarPage() {
   }
 
   return (
-    <Box p={8}>
+    <Box p={{ base: 4, md: 8 }}>
       {/* HEADER */}
-      <Flex justify="space-between" align="center" mb={6}>
-        <Heading color="gold.300">Calendar</Heading>
+      <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={3}>
+        <Heading color="gold.300" fontSize={{ base: "xl", md: "2xl" }}>Calendar</Heading>
 
         <Button
           colorScheme="yellow"
-          size="md"
+          size={{ base: "sm", md: "md" }}
           onClick={() => navigate("/appointments/new")}
         >
           + New Appointment
@@ -191,10 +191,11 @@ export default function CalendarPage() {
       ) : (
         <Box
           bg="#0F0F0F"
-          p={5}
+          p={{ base: 2, md: 5 }}
           borderRadius="lg"
           border="1px solid #2A2A2A"
           boxShadow="0 0 15px rgba(212, 175, 55, 0.1)"
+          overflowX={{ base: "auto", md: "visible" }}
         >
           <Calendar
             localizer={localizer}
@@ -205,7 +206,7 @@ export default function CalendarPage() {
             onView={(v) => setCurrentView(v)}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 650 }}
+            style={{ height: "100%", minHeight: 500 }}
             views={["month", "week", "day"]}
             step={30}
             min={new Date(1970, 1, 1, 7, 0)}
