@@ -431,9 +431,16 @@ export default function HomePage() {
                           {appt.customers?.phone && (
                             <Text fontSize="xs">📞 {appt.customers.phone}</Text>
                           )}
-                          <Text fontSize="xs" color="gray.600" mt={1}>
-                            {appt.customers?.address}
-                          </Text>
+                          {appt.customers?.address && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appt.customers.address)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
+                            >
+                              📍 {appt.customers.address}
+                            </a>
+                          )}
                         </Box>
                       </Popup>
                     </Marker>
@@ -459,9 +466,14 @@ export default function HomePage() {
                           {customer.phone && (
                             <Text fontSize="xs">📞 {customer.phone}</Text>
                           )}
-                          <Text fontSize="xs" color="gray.600" mt={1}>
-                            {customer.address}
-                          </Text>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
+                          >
+                            📍 {customer.address}
+                          </a>
                         </Box>
                       </Popup>
                     </Marker>
@@ -532,7 +544,16 @@ export default function HomePage() {
                       <Text fontWeight="bold" color="gold.300">
                         Address:
                       </Text>
-                      <Text>{selectedAppointment.customers.address}</Text>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAppointment.customers.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#63B3ED", textDecoration: "none" }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                      >
+                        📍 {selectedAppointment.customers.address}
+                      </a>
                     </Box>
                   )}
 

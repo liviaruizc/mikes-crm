@@ -297,9 +297,14 @@ export default function MapPage() {
                       {customer.estimated_price && (
                         <Text>💰 ${customer.estimated_price.toLocaleString()}</Text>
                       )}
-                      <Text color="gray.600" fontSize="xs" mt={1}>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
+                      >
                         📍 {customer.address}
-                      </Text>
+                      </a>
                     </VStack>
                   </Box>
                 </Popup>

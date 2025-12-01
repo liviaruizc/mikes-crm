@@ -305,7 +305,16 @@ export default function CalendarPage() {
                       <Text fontWeight="bold" color="gold.300">
                         Address:
                       </Text>
-                      <Text>{selectedEvent.customer.address}</Text>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.customer.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#63B3ED", textDecoration: "none" }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                      >
+                        📍 {selectedEvent.customer.address}
+                      </a>
                     </Box>
                   )}
 
