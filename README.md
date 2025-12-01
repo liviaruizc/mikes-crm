@@ -1,4 +1,4 @@
-# Boss CRM
+# CRM
 
 A comprehensive Customer Relationship Management system built for service-based businesses. Track customers, manage appointments, visualize locations on an interactive map, and monitor your sales pipeline.
 
