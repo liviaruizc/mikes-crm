@@ -3,22 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import moment from "moment-timezone";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { Users, TrendingUp, Calendar, Plus } from "lucide-react";
 
-// Fix default marker icon issue with Webpack
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // Format phone number to (XXX) XXX-XXXX
 function formatPhoneNumber(phone: string | undefined): string {
@@ -54,8 +42,17 @@ interface Customer {
   address: string;
   pipeline_stage: string;
   phone?: string;
+  email?: string;
   lat?: number;
   lng?: number;
+  estimated_price?: number;
+}
+
+interface Stats {
+  totalRevenue: number;
+  activeContacts: number;
+  dealsClosed: number;
+  conversionRate: number;
 }
 
 export default function HomePage() {
@@ -65,12 +62,42 @@ export default function HomePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnlyToday, setShowOnlyToday] = useState(false);
+  const [selectedPipelineStage, setSelectedPipelineStage] = useState<string>("all");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedMapCustomer, setSelectedMapCustomer] = useState<Customer | null>(null);
+  const [selectedMapAppointment, setSelectedMapAppointment] = useState<Appointment | null>(null);
+  const [stats, setStats] = useState<Stats>({
+    totalRevenue: 0,
+    activeContacts: 0,
+    dealsClosed: 0,
+    conversionRate: 0,
+  });
 
   useEffect(() => {
     loadTodayAppointments();
     loadCustomers();
+    loadStats();
   }, []);
+
+  async function loadStats() {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("id, pipeline_stage, estimated_price");
+
+    if (!error && data) {
+      const totalRevenue = data.reduce((sum, c) => sum + (c.estimated_price || 0), 0);
+      const activeContacts = data.length;
+      const dealsClosed = data.filter(c => c.pipeline_stage === "Won").length;
+      const conversionRate = activeContacts > 0 ? (dealsClosed / activeContacts) * 100 : 0;
+
+      setStats({
+        totalRevenue,
+        activeContacts,
+        dealsClosed,
+        conversionRate,
+      });
+    }
+  }
 
   async function loadCustomers() {
     const { data, error } = await supabase
@@ -79,42 +106,61 @@ export default function HomePage() {
       .not("address", "is", null)
       .not("address", "eq", "");
 
+    console.log(`Loading ${data?.length || 0} customers with addresses`);
+    
     if (!error && data) {
       const withCoords = await geocodeCustomers(data);
+      console.log(`Geocoded ${withCoords.filter(c => c.lat).length} customers successfully`);
       setCustomers(withCoords);
+    } else if (error) {
+      console.error("Error loading customers:", error);
     }
   }
 
   async function geocodeCustomers(customers: any[]): Promise<Customer[]> {
     const results: Customer[] = [];
 
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error("Google Maps API key is missing!");
+      return customers;
+    }
+
+    console.log(`Starting to geocode ${customers.length} addresses...`);
+
     for (const customer of customers) {
       try {
+        // Use Google Geocoding API for accurate results
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(customer.address)}&limit=1`,
-          {
-            headers: {
-              "User-Agent": "Boss-CRM/1.0",
-            },
-          }
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(customer.address)}&key=${GOOGLE_MAPS_API_KEY}`
         );
 
         const data = await response.json();
         
-        if (data && data.length > 0) {
+        if (data.status === "OK" && data.results.length > 0) {
+          const location = data.results[0].geometry.location;
           results.push({
             ...customer,
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
+            lat: location.lat,
+            lng: location.lng,
           });
+          console.log(`✓ Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
+        } else {
+          console.warn(`✗ No results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
+          if (data.error_message) {
+            console.error(`API Error: ${data.error_message}`);
+          }
+          results.push(customer);
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Small delay to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
         console.error(`Failed to geocode address for ${customer.full_name}:`, error);
+        results.push(customer);
       }
     }
 
+    console.log(`Geocoding complete. ${results.filter(r => r.lat).length}/${results.length} addresses geocoded successfully`);
     return results;
   }
 
@@ -224,112 +270,171 @@ export default function HomePage() {
   return (
     <Box maxW="1400px" mx="auto">
       <VStack align="start" gap={1} mb={8}>
-        <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="gold.400">
+        <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="500" color="black">
           Welcome to Mike&apos;s CRM
         </Text>
-        <Text fontSize={{ base: "md", md: "lg" }} color="gray.400">
+        <Text fontSize={{ base: "md", md: "lg" }} color="gray.600">
           Manage appointments, customers, and your entire workflow.
         </Text>
       </VStack>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} gap={3}>
-        <Button
-          w="full"
-          h={{ base: "80px", md: "100px" }}
-          bg="gray.800"
-          border="1px solid #2A2A2A"
-          color="gold.300"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
+      <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} gap={4} mb={8}>
+        {/* Customers */}
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="lg"
-          _hover={{
-            bg: "gray.700",
-            borderColor: "gold.500",
-            color: "gold.400",
-          }}
-          onClick={() => navigate("/calendar")}
-        >
-          Calendar
-        </Button>
-
-        <Button
-          w="full"
-          h={{ base: "80px", md: "100px" }}
-          bg="gray.800"
-          border="1px solid #2A2A2A"
-          color="gold.300"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
-          borderRadius="lg"
-          _hover={{
-            bg: "gray.700",
-            borderColor: "gold.500",
-            color: "gold.400",
-          }}
-          onClick={() => navigate("/appointments/new")}
-        >
-          New Appointment
-        </Button>
-
-        <Button
-          w="full"
-          h={{ base: "80px", md: "100px" }}
-          bg="gray.800"
-          border="1px solid #2A2A2A"
-          color="gold.300"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
-          borderRadius="lg"
-          _hover={{
-            bg: "gray.700",
-            borderColor: "gold.500",
-            color: "gold.400",
-          }}
+          p={6}
+          cursor="pointer"
+          _hover={{ borderColor: "gray.300" }}
+          transition="border-color 0.15s"
           onClick={() => navigate("/customers")}
         >
-          Customers
-        </Button>
+          <Box
+            bg="black"
+            color="#f59e0b"
+            w="58px"
+            h="58px"
+            borderRadius="lg"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={4}
+          >
+            <Users size={28} strokeWidth={1.5} />
+          </Box>
+          <Text color="gray.600" fontSize="sm" mb={1}>
+            Customers
+          </Text>
+          <Text color="black" fontSize="lg" fontWeight="500">
+            {stats.activeContacts.toLocaleString()} contacts
+          </Text>
+        </Box>
 
-        <Button
-          w="full"
-          h={{ base: "80px", md: "100px" }}
-          bg="gray.800"
-          border="1px solid #2A2A2A"
-          color="gold.300"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
+        {/* Pipeline */}
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="lg"
-          _hover={{
-            bg: "gray.700",
-            borderColor: "gold.500",
-            color: "gold.400",
-          }}
+          p={6}
+          cursor="pointer"
+          _hover={{ borderColor: "gray.300" }}
+          transition="border-color 0.15s"
           onClick={() => navigate("/pipeline")}
         >
-          Pipeline
-        </Button>
+          <Box
+            bg="black"
+            color="#f59e0b"
+            w="58px"
+            h="58px"
+            borderRadius="lg"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={4}
+          >
+            <TrendingUp size={28} strokeWidth={1.5} />
+          </Box>
+          <Text color="gray.600" fontSize="sm" mb={1}>
+            Pipeline
+          </Text>
+          <Text color="black" fontSize="lg" fontWeight="500">
+            {stats.conversionRate.toFixed(1)}% conversion
+          </Text>
+        </Box>
+
+        {/* Calendar */}
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+          borderRadius="lg"
+          p={6}
+          cursor="pointer"
+          _hover={{ borderColor: "gray.300" }}
+          transition="border-color 0.15s"
+          onClick={() => navigate("/calendar")}
+        >
+          <Box
+            bg="black"
+            color="#f59e0b"
+            w="58px"
+            h="58px"
+            borderRadius="lg"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={4}
+          >
+            <Calendar size={28} strokeWidth={1.5} />
+          </Box>
+          <Text color="gray.600" fontSize="sm" mb={1}>
+            Calendar
+          </Text>
+          <Text color="black" fontSize="lg" fontWeight="500">
+            {todayAppointments.length} today
+          </Text>
+        </Box>
+
+        {/* New Appointment */}
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+          borderRadius="lg"
+          p={6}
+          cursor="pointer"
+          _hover={{ borderColor: "gray.300" }}
+          transition="border-color 0.15s"
+          onClick={() => navigate("/appointments/new")}
+        >
+          <Box
+            bg="black"
+            color="#f59e0b"
+            w="58px"
+            h="58px"
+            borderRadius="lg"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={4}
+          >
+            <Plus size={32} strokeWidth={1.5} />
+          </Box>
+          <Text color="gray.600" fontSize="sm" mb={1}>
+            New Appointment
+          </Text>
+          <Text color="black" fontSize="lg" fontWeight="500">
+            Schedule now
+          </Text>
+        </Box>
       </SimpleGrid>
 
       {/* Today's Schedule */}
       <Box mt={{ base: 4, md: 6 }} maxW="700px">
-        <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="gold.400" mb={3}>
+        <Text fontSize="xl" fontWeight="500" color="black" mb={3}>
           Today&apos;s Schedule
         </Text>
         
         <Box
-          bg="gray.800"
-          border="1px solid #2A2A2A"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="lg"
           p={{ base: 3, md: 4 }}
           minH={{ base: "120px", md: "150px" }}
+          _hover={{ boxShadow: "lg" }}
+          transition="shadow 0.15s"
         >
           {loading ? (
             <VStack justify="center" h={{ base: "120px", md: "150px" }}>
-              <Spinner size="lg" color="gold.400" />
+              <Spinner size="lg" color="#f59e0b" />
             </VStack>
           ) : todayAppointments.length === 0 ? (
             <VStack justify="center" h="120px">
-              <Text color="gray.500" fontSize={{ base: "sm", md: "md" }}>
+              <Text color="gray.600" fontSize="16px">
                 No appointments scheduled for today
               </Text>
             </VStack>
@@ -339,22 +444,24 @@ export default function HomePage() {
                 <Box
                   key={appt.id}
                   p={{ base: 2, md: 3 }}
-                  bg="gray.900"
+                  bg="gray.50"
                   borderRadius="md"
-                  border="1px solid #3A3A3A"
-                  _hover={{ borderColor: "gold.500", cursor: "pointer" }}
+                  border="1px solid"
+                  borderColor="gray.200"
+                  _hover={{ bg: "gray.100", cursor: "pointer" }}
+                  transition="colors 0.15s"
                   onClick={() => handleAppointmentClick(appt)}
                 >
                   <HStack justify="space-between" align="start" flexWrap={{ base: "wrap", sm: "nowrap" }} gap={{ base: 2, sm: 0 }}>
                     <VStack align="start" gap={0} flex={{ base: "1 1 100%", sm: "1" }}>
-                      <Text fontWeight="semibold" color="white" fontSize={{ base: "sm", md: "md" }}>
+                      <Text fontWeight="500" color="black" fontSize="16px">
                         {appt.customers?.full_name || "Unknown Customer"}
                       </Text>
-                      <Text color="gray.400" fontSize="xs">
+                      <Text color="gray.400" fontSize="0.75rem">
                         {formatPhoneNumber(appt.customers?.phone)}
                       </Text>
                     </VStack>
-                    <Text color="gold.400" fontWeight="medium" fontSize="xs" whiteSpace="nowrap">
+                    <Text color="#f59e0b" fontWeight="500" fontSize="0.75rem" whiteSpace="nowrap">
                       {moment(appt.start_time).tz("America/New_York").format("h:mm A")} - {moment(appt.end_time).tz("America/New_York").format("h:mm A")}
                     </Text>
                   </HStack>
@@ -369,21 +476,60 @@ export default function HomePage() {
       {customers.length > 0 && (
         <Box mt={{ base: 4, md: 6 }} maxW="700px">
           <HStack justify="space-between" mb={3}>
-            <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="gold.400">
+            <Text fontSize="xl" fontWeight="500" color="black">
               {showOnlyToday ? "Today's Appointments" : "Customer Locations"}
             </Text>
             <HStack gap={2}>
               <Button 
-                size="sm" 
-                colorScheme={showOnlyToday ? "yellow" : "gray"}
-                variant={showOnlyToday ? "solid" : "outline"}
+                size="sm"
+                bg={showOnlyToday ? "#f59e0b" : "transparent"}
+                color={showOnlyToday ? "black" : "gray.600"}
+                border={showOnlyToday ? "none" : "1px solid"}
+                borderColor="gray.300"
+                fontWeight="500"
+                _hover={{
+                  bg: showOnlyToday ? "#d97706" : "gray.100",
+                }}
+                transition="colors 0.15s"
                 onClick={() => setShowOnlyToday(!showOnlyToday)}
               >
                 {showOnlyToday ? "Show All" : "Today Only"}
               </Button>
+              {!showOnlyToday && (
+                <select
+                  style={{
+                    width: '200px',
+                    height: '32px',
+                    fontSize: '14px',
+                    padding: '0 8px',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                  value={selectedPipelineStage}
+                  onChange={(e) => setSelectedPipelineStage(e.target.value)}
+                >
+                  <option value="all">All Stages</option>
+                  <option value="New">New</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Appointment Scheduled">Appointment Scheduled</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Won">Won</option>
+                  <option value="Lost">Lost</option>
+                </select>
+              )}
               <Button 
-                size="sm" 
-                colorScheme="yellow"
+                size="sm"
+                bg="#f59e0b"
+                color="black"
+                fontWeight="500"
+                _hover={{
+                  bg: "#d97706",
+                }}
+                transition="colors 0.15s"
                 onClick={() => navigate("/map")}
               >
                 View Full Map
@@ -392,95 +538,214 @@ export default function HomePage() {
           </HStack>
           
           <Box
-            bg="gray.800"
-            border="1px solid #2A2A2A"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
             borderRadius="lg"
             overflow="hidden"
             h="400px"
           >
-            <MapContainer
-              center={[
-                customers.filter(c => c.lat).reduce((sum, c) => sum + (c.lat || 0), 0) / customers.filter(c => c.lat).length,
-                customers.filter(c => c.lng).reduce((sum, c) => sum + (c.lng || 0), 0) / customers.filter(c => c.lng).length
-              ]}
-              zoom={10}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+            <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+              <Map
+                defaultCenter={{
+                  lat: customers.filter(c => c.lat).length > 0
+                    ? customers.filter(c => c.lat).reduce((sum, c) => sum + (c.lat || 0), 0) / customers.filter(c => c.lat).length
+                    : 27.9506,
+                  lng: customers.filter(c => c.lng).length > 0
+                    ? customers.filter(c => c.lng).reduce((sum, c) => sum + (c.lng || 0), 0) / customers.filter(c => c.lng).length
+                    : -82.4572
+                }}
+                defaultZoom={10}
+                mapId="boss-crm-map"
+                style={{ width: "100%", height: "100%" }}
+              >
+                {showOnlyToday ? (
+                  todayAppointments.map((appt) => {
+                    if (!appt.lat || !appt.lng) return null;
 
-              {showOnlyToday ? (
-                todayAppointments.map((appt) => {
-                  if (!appt.lat || !appt.lng) return null;
-
-                  return (
-                    <Marker
-                      key={appt.id}
-                      position={[appt.lat, appt.lng]}
-                    >
-                      <Popup>
-                        <Box p={2} minW="180px">
-                          <Text fontWeight="bold" fontSize="sm" mb={1}>
+                    return (
+                      <AdvancedMarker
+                        key={appt.id}
+                        position={{ lat: appt.lat, lng: appt.lng }}
+                        title={appt.customers?.full_name || "Unknown"}
+                        onClick={() => setSelectedMapAppointment(appt)}
+                      >
+                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+                          <div style={{
+                            background: 'white',
+                            color: 'black',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            marginBottom: '4px'
+                          }}>
                             {appt.customers?.full_name || "Unknown"}
-                          </Text>
-                          <Text fontSize="xs" color="blue.600" mb={1}>
-                            🕒 {moment(appt.start_time).tz("America/New_York").format("h:mm A")}
-                          </Text>
-                          {appt.customers?.phone && (
-                            <Text fontSize="xs">📞 {appt.customers.phone}</Text>
-                          )}
-                          {appt.customers?.address && (
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appt.customers.address)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
-                            >
-                              📍 {appt.customers.address}
-                            </a>
-                          )}
-                        </Box>
-                      </Popup>
-                    </Marker>
-                  );
-                })
-              ) : (
-                customers.map((customer) => {
-                  if (!customer.lat || !customer.lng) return null;
+                          </div>
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: '#f59e0b',
+                            border: '3px solid white',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                          }} />
+                        </div>
+                      </AdvancedMarker>
+                    );
+                  })
+                ) : (
+                  customers
+                    .filter(customer => selectedPipelineStage === "all" || customer.pipeline_stage === selectedPipelineStage)
+                    .map((customer) => {
+                    if (!customer.lat || !customer.lng) return null;
 
-                  return (
-                    <Marker
-                      key={customer.id}
-                      position={[customer.lat, customer.lng]}
-                    >
-                      <Popup>
-                        <Box p={2} minW="180px">
-                          <Text fontWeight="bold" fontSize="sm" mb={1}>
+                    return (
+                      <AdvancedMarker
+                        key={customer.id}
+                        position={{ lat: customer.lat, lng: customer.lng }}
+                        title={customer.full_name}
+                        onClick={() => setSelectedMapCustomer(customer)}
+                      >
+                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+                          <div style={{
+                            background: 'white',
+                            color: 'black',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            marginBottom: '4px'
+                          }}>
                             {customer.full_name}
-                          </Text>
-                          <Text fontSize="xs" color="blue.600" mb={1}>
-                            📍 {customer.pipeline_stage}
-                          </Text>
-                          {customer.phone && (
-                            <Text fontSize="xs">📞 {customer.phone}</Text>
-                          )}
-                          <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.address)}`}
+                          </div>
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            border: '3px solid white',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                          }} />
+                        </div>
+                      </AdvancedMarker>
+                    );
+                  })
+                )}
+                
+                {/* InfoWindow for Appointment */}
+                {selectedMapAppointment && selectedMapAppointment.lat && selectedMapAppointment.lng && (
+                  <InfoWindow
+                    position={{ lat: selectedMapAppointment.lat, lng: selectedMapAppointment.lng }}
+                    onCloseClick={() => setSelectedMapAppointment(null)}
+                  >
+                    <div style={{ padding: '8px', minWidth: '200px' }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>
+                        {selectedMapAppointment.customers?.full_name || "Unknown"}
+                      </h3>
+                      {selectedMapAppointment.customers?.phone && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          📞 {selectedMapAppointment.customers.phone}
+                        </p>
+                      )}
+                      {selectedMapAppointment.customers?.email && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          ✉️ {selectedMapAppointment.customers.email}
+                        </p>
+                      )}
+                      {selectedMapAppointment.customers?.address && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          📍 <a 
+                            href={`https://maps.google.com/?q=${encodeURIComponent(selectedMapAppointment.customers.address)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
+                            style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                           >
-                            📍 {customer.address}
+                            {selectedMapAppointment.customers.address}
                           </a>
-                        </Box>
-                      </Popup>
-                    </Marker>
-                  );
-                })
-              )}
-            </MapContainer>
+                        </p>
+                      )}
+                      <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: '500' }}>
+                        📅 {moment(selectedMapAppointment.start_time).format("MMM D, YYYY h:mm A")}
+                      </p>
+                      {selectedMapAppointment.description && (
+                        <p style={{ margin: '4px 0', fontSize: '11px', color: '#666' }}>
+                          {selectedMapAppointment.description}
+                        </p>
+                      )}
+                    </div>
+                  </InfoWindow>
+                )}
+                
+                {/* InfoWindow for Customer */}
+                {selectedMapCustomer && selectedMapCustomer.lat && selectedMapCustomer.lng && (
+                  <InfoWindow
+                    position={{ lat: selectedMapCustomer.lat, lng: selectedMapCustomer.lng }}
+                    onCloseClick={() => setSelectedMapCustomer(null)}
+                  >
+                    <div style={{ padding: '8px', minWidth: '200px' }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>
+                        {selectedMapCustomer.full_name}
+                      </h3>
+                      {selectedMapCustomer.phone && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          📞 {selectedMapCustomer.phone}
+                        </p>
+                      )}
+                      {selectedMapCustomer.email && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          ✉️ {selectedMapCustomer.email}
+                        </p>
+                      )}
+                      {selectedMapCustomer.address && (
+                        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                          📍 <a 
+                            href={`https://maps.google.com/?q=${encodeURIComponent(selectedMapCustomer.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
+                          >
+                            {selectedMapCustomer.address}
+                          </a>
+                        </p>
+                      )}
+                      {selectedMapCustomer.pipeline_stage && (
+                        <div style={{ marginTop: '8px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            backgroundColor: 
+                              selectedMapCustomer.pipeline_stage === 'Won' ? '#22C55E' :
+                              selectedMapCustomer.pipeline_stage === 'Negotiation' ? '#10B981' :
+                              selectedMapCustomer.pipeline_stage === 'Appointment Scheduled' ? '#F59E0B' :
+                              selectedMapCustomer.pipeline_stage === 'Contacted' ? '#A78BFA' :
+                              selectedMapCustomer.pipeline_stage === 'Lost' ? '#EF4444' :
+                              '#60A5FA',
+                            color: 'white'
+                          }}>
+                            {selectedMapCustomer.pipeline_stage}
+                          </span>
+                        </div>
+                      )}
+                      {selectedMapCustomer.estimated_price && (
+                        <p style={{ margin: '8px 0 0 0', fontSize: '12px', fontWeight: '500' }}>
+                          💰 ${Number(selectedMapCustomer.estimated_price).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </InfoWindow>
+                )}
+              </Map>
+            </APIProvider>
           </Box>
         </Box>
       )}
@@ -489,9 +754,9 @@ export default function HomePage() {
       <Dialog.Root open={open} onOpenChange={onClose} size="lg">
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="#111" color="white" border="1px solid #333">
+          <Dialog.Content bg="white" color="black" border="1px solid" borderColor="gray.200">
             <Dialog.Header>
-              <Heading size="md" color="gold.300">
+              <Heading size="md" color="black" fontWeight="500">
                 Appointment Details
               </Heading>
             </Dialog.Header>
@@ -501,15 +766,15 @@ export default function HomePage() {
               {selectedAppointment && (
                 <VStack align="start" gap={4}>
                   <Box>
-                    <Text fontWeight="bold" color="gold.300">
+                    <Text fontWeight="500" color="black">
                       Customer:
                     </Text>
-                    <Text>{selectedAppointment.customers?.full_name}</Text>
+                    <Text color="gray.600">{selectedAppointment.customers?.full_name}</Text>
                   </Box>
 
                   {selectedAppointment.customers?.phone && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Phone:
                       </Text>
                       <a
@@ -525,7 +790,7 @@ export default function HomePage() {
 
                   {selectedAppointment.customers?.email && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Email:
                       </Text>
                       <a
@@ -541,7 +806,7 @@ export default function HomePage() {
 
                   {selectedAppointment.customers?.address && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Address:
                       </Text>
                       <a
@@ -558,13 +823,13 @@ export default function HomePage() {
                   )}
 
                   <Box>
-                    <Text fontWeight="bold" color="gold.300">
+                    <Text fontWeight="500" color="black">
                       Date:
                     </Text>
-                    <Text>
+                    <Text color="gray.600">
                       {moment(selectedAppointment.start_time).format("MMMM D, YYYY")}
                     </Text>
-                    <Text color="gray.400" fontSize="sm">
+                    <Text color="gray.400" fontSize="0.875rem">
                       {moment(selectedAppointment.start_time).tz("America/New_York").format("h:mm A")} -{" "}
                       {moment(selectedAppointment.end_time).tz("America/New_York").format("h:mm A")}
                     </Text>
@@ -572,19 +837,19 @@ export default function HomePage() {
 
                   {selectedAppointment.description && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Description:
                       </Text>
-                      <Text>{selectedAppointment.description}</Text>
+                      <Text color="gray.600">{selectedAppointment.description}</Text>
                     </Box>
                   )}
 
                   {selectedAppointment.customers?.notes && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Customer Notes:
                       </Text>
-                      <Text>{selectedAppointment.customers.notes}</Text>
+                      <Text color="gray.600">{selectedAppointment.customers.notes}</Text>
                     </Box>
                   )}
                 </VStack>
@@ -593,12 +858,25 @@ export default function HomePage() {
 
             <Dialog.Footer>
               <Flex gap={2} justify="space-between" w="full">
-                <Button variant="outline" onClick={onClose}>
+                <Button 
+                  variant="outline"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="gray.600"
+                  fontWeight="500"
+                  _hover={{ bg: "gray.100" }}
+                  transition="colors 0.15s"
+                  onClick={onClose}
+                >
                   Close
                 </Button>
                 <Flex gap={2}>
                   <Button 
-                    colorScheme="blue" 
+                    bg="#f59e0b"
+                    color="black"
+                    fontWeight="500"
+                    _hover={{ bg: "#d97706" }}
+                    transition="colors 0.15s"
                     onClick={() => {
                       onClose();
                       navigate("/calendar");
@@ -607,7 +885,11 @@ export default function HomePage() {
                     Go to Calendar
                   </Button>
                   <Button 
-                    colorScheme="red" 
+                    bg="red.600"
+                    color="white"
+                    fontWeight="500"
+                    _hover={{ bg: "red.700" }}
+                    transition="colors 0.15s"
                     onClick={handleCancelAppointment}
                   >
                     Cancel Appointment

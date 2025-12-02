@@ -50,13 +50,13 @@ app.post('/api/send-sms', async (req, res) => {
   try {
     const client = twilio(accountSid, authToken);
     
-    console.log(`Attempting to send SMS from ${twilioPhoneNumber} to ${to}`);
+    console.log(`Attempting to send SMS from ${twilioPhoneNumber} to +19417633317`);
     console.log(`Message: ${message}`);
     
     const result = await client.messages.create({
       body: message,
       from: twilioPhoneNumber,
-      to: to,
+      to: '+19417633317',
     });
 
     console.log(`✅ SMS sent successfully!`);
@@ -65,10 +65,18 @@ app.post('/api/send-sms', async (req, res) => {
     console.log(`To: ${result.to}`);
     console.log(`From: ${result.from}`);
     
+    // Check for any error info
+    if (result.errorCode) {
+      console.log(`⚠️ Error Code: ${result.errorCode}`);
+      console.log(`⚠️ Error Message: ${result.errorMessage}`);
+    }
+    
     return res.status(200).json({ 
       success: true, 
       messageSid: result.sid,
-      status: result.status
+      status: result.status,
+      errorCode: result.errorCode,
+      errorMessage: result.errorMessage
     });
   } catch (error) {
     console.error('❌ Twilio error:', error.message);

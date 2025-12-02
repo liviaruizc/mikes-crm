@@ -9,6 +9,7 @@ export default function AppLayout() {
     { to: '/appointments/new', label: 'New Appointment' },
     { to: '/calendar', label: 'Calendar' },
     { to: '/customers', label: 'Customers' },
+    { to: '/deals', label: 'Deals' },
     { to: '/pipeline', label: 'Pipeline' },
     { to: '/map', label: 'Map' },
   ];
@@ -21,9 +22,9 @@ export default function AppLayout() {
         width: "100%",
         padding: "12px 16px",
         borderRadius: "8px",
-        backgroundColor: isActive ? "#D4AF37" : "transparent",
-        color: isActive ? "black" : "white",
-        fontWeight: isActive ? "600" : "400",
+        backgroundColor: isActive ? "#f59e0b" : "transparent",
+        color: isActive ? "#000000" : "#FFFFFF",
+        fontWeight: "500",
         textDecoration: "none",
         fontSize: "16px",
         transition: "all 0.2s",
@@ -34,26 +35,26 @@ export default function AppLayout() {
   );
 
   return (
-    <Flex minH="100vh" bg="gray.900" direction="column">
+    <Flex minH="100vh" bg="white" direction="column">
       {/* Mobile Header */}
       <Box
         display={{ base: "flex", md: "none" }}
-        bg="gray.800"
+        bg="#000000"
         p={4}
         borderBottom="1px solid"
-        borderColor="gray.700"
+        borderColor="gray.200"
         alignItems="center"
         justifyContent="space-between"
       >
-        <Heading size="md" color="gold.400">
+        <Heading size="md" color="#f59e0b">
           Mike's CRM
         </Heading>
         <IconButton
           aria-label="Open menu"
           onClick={onOpen}
-          bg="gray.700"
+          bg="gray.800"
           color="white"
-          _hover={{ bg: "gray.600" }}
+          _hover={{ bg: "gray.700" }}
         >
           ☰
         </IconButton>
@@ -63,14 +64,14 @@ export default function AppLayout() {
         {/* Desktop Sidebar */}
         <Box
           display={{ base: "none", md: "block" }}
-          w="250px"
-          bg="gray.800"
+          w="256px"
+          bg="#000000"
           p={6}
           borderRight="1px solid"
-          borderColor="gray.700"
+          borderColor="gray.200"
           overflowY="auto"
         >
-          <Heading size="lg" color="gold.400" mb={8}>
+          <Heading size="lg" color="#f59e0b" mb={8}>
             Mike's CRM
           </Heading>
           <VStack align="start" gap="3" w="full">
@@ -84,9 +85,9 @@ export default function AppLayout() {
         <Drawer.Root open={open} onOpenChange={onClose} placement="start">
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content bg="gray.800">
+            <Drawer.Content bg="#000000">
               <Drawer.Header borderBottom="1px solid" borderColor="gray.700">
-                <Heading size="md" color="gold.400">
+                <Heading size="md" color="#f59e0b">
                   Mike's CRM
                 </Heading>
               </Drawer.Header>
@@ -120,7 +121,7 @@ export default function AppLayout() {
         bottom="0"
         left="0"
         right="0"
-        bg="gray.800"
+        bg="#000000"
         borderTop="1px solid"
         borderColor="gray.700"
         justifyContent="space-around"
@@ -143,8 +144,8 @@ export default function AppLayout() {
               alignItems: "center",
               padding: "8px 12px",
               borderRadius: "8px",
-              backgroundColor: isActive ? "#D4AF37" : "transparent",
-              color: isActive ? "black" : "white",
+              backgroundColor: isActive ? "#f59e0b" : "transparent",
+              color: isActive ? "#000000" : "#FFFFFF",
               textDecoration: "none",
               fontSize: "12px",
               minWidth: "70px",

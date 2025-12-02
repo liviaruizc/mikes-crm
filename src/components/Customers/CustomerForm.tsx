@@ -165,8 +165,8 @@ export default function CustomerForm({
     <Dialog.Root open={open} onOpenChange={(e) => e.open ? undefined : onClose()} size="lg">
       <Dialog.Backdrop />
       <Dialog.Positioner>
-        <Dialog.Content bg="gray.900">
-          <Dialog.Header>
+        <Dialog.Content bg="white" color="black" border="1px solid" borderColor="gray.200">
+          <Dialog.Header fontWeight="500" fontSize="xl">
             {existingCustomer ? "Edit Customer" : "Add New Customer"}
           </Dialog.Header>
           <Dialog.CloseTrigger />
@@ -174,42 +174,58 @@ export default function CustomerForm({
           <Dialog.Body>
             <VStack gap={4}>
               <Field.Root required invalid={errors.full_name}>
-                <Field.Label>Name *</Field.Label>
+                <Field.Label fontWeight="500" color="black">Name *</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   value={form.full_name}
                   onChange={(e) => updateField("full_name", e.target.value)}
                 />
                 {errors.full_name && (
-                  <Field.ErrorText color="red.400">Name is required</Field.ErrorText>
+                  <Field.ErrorText color="red.600">Name is required</Field.ErrorText>
                 )}
               </Field.Root>
 
               <Field.Root required invalid={errors.phone}>
-                <Field.Label>Phone *</Field.Label>
+                <Field.Label fontWeight="500" color="black">Phone *</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   value={form.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
                 />
                 {errors.phone && (
-                  <Field.ErrorText color="red.400">Phone is required</Field.ErrorText>
+                  <Field.ErrorText color="red.600">Phone is required</Field.ErrorText>
                 )}
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Email</Field.Label>
+                <Field.Label fontWeight="500" color="black">Email</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
                 />
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Street Address</Field.Label>
+                <Field.Label fontWeight="500" color="black">Street Address</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   placeholder="123 Main St"
                   value={form.street_address}
                   onChange={(e) => updateField("street_address", e.target.value)}
@@ -217,9 +233,13 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>City</Field.Label>
+                <Field.Label fontWeight="500" color="black">City</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   placeholder="Miami"
                   value={form.city}
                   onChange={(e) => updateField("city", e.target.value)}
@@ -227,9 +247,13 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>State</Field.Label>
+                <Field.Label fontWeight="500" color="black">State</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   placeholder="FL"
                   value={form.state}
                   onChange={(e) => updateField("state", e.target.value)}
@@ -237,9 +261,13 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Zip Code</Field.Label>
+                <Field.Label fontWeight="500" color="black">Zip Code</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   placeholder="33101"
                   value={form.zip_code}
                   onChange={(e) => updateField("zip_code", e.target.value)}
@@ -247,9 +275,13 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Job Type</Field.Label>
+                <Field.Label fontWeight="500" color="black">Job Type</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   placeholder="e.g., Painting, Roofing, Remodeling"
                   value={form.job_type}
                   onChange={(e) => updateField("job_type", e.target.value)}
@@ -257,9 +289,13 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Estimated Price</Field.Label>
+                <Field.Label fontWeight="500" color="black">Estimated Price</Field.Label>
                 <Input
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   type="number"
                   placeholder="0.00"
                   value={form.estimated_price}
@@ -268,20 +304,26 @@ export default function CustomerForm({
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Notes</Field.Label>
+                <Field.Label fontWeight="500" color="black">Notes</Field.Label>
                 <Textarea
-                  bg="gray.800"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="black"
+                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   value={form.notes}
                   onChange={(e) => updateField("notes", e.target.value)}
                 />
               </Field.Root>
 
               <Field.Root>
-                <Field.Label>Lead Source</Field.Label>
+                <Field.Label fontWeight="500" color="black">Lead Source</Field.Label>
                 <NativeSelectRoot>
                   <NativeSelectField
-                    bg="gray.800"
-                    color="white"
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.300"
+                    color="black"
                     value={form.lead_source_id}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField("lead_source_id", e.target.value)}
                     css={{
@@ -304,15 +346,26 @@ export default function CustomerForm({
 
           <Dialog.Footer>
             <Button 
-              variant="ghost" 
-              mr={3} 
+              variant="outline"
+              border="1px solid"
+              borderColor="gray.300"
+              color="gray.600"
+              fontWeight="500"
+              mr={3}
+              _hover={{ bg: "gray.100" }}
+              transition="colors 0.15s"
               onClick={onClose}
-              color="white"
-              _hover={{ color: "black", bg: "gray.200" }}
             >
               Cancel
             </Button>
-            <Button colorScheme="yellow" onClick={handleSubmit}>
+            <Button 
+              bg="#f59e0b"
+              color="black"
+              fontWeight="500"
+              _hover={{ bg: "#d97706" }}
+              transition="colors 0.15s"
+              onClick={handleSubmit}
+            >
               Save Customer
             </Button>
           </Dialog.Footer>

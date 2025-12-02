@@ -156,11 +156,15 @@ export default function CalendarPage() {
     <Box p={{ base: 4, md: 8 }}>
       {/* HEADER */}
       <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={3}>
-        <Heading color="gold.300" fontSize={{ base: "xl", md: "2xl" }}>Calendar</Heading>
+        <Heading color="black" fontWeight="500" fontSize="xl">Calendar</Heading>
 
         <Button
-          colorScheme="yellow"
+          bg="#f59e0b"
+          color="black"
+          fontWeight="500"
           size={{ base: "sm", md: "md" }}
+          _hover={{ bg: "#d97706" }}
+          transition="colors 0.15s"
           onClick={() => navigate("/appointments/new")}
         >
           + New Appointment
@@ -173,9 +177,13 @@ export default function CalendarPage() {
           <Button
             key={v}
             onClick={() => setCurrentView(v as View)}
-            bg={currentView === v ? "gold.300" : "gray.700"}
-            color={currentView === v ? "black" : "white"}
-            _hover={{ bg: "gold.400", color: "black" }}
+            bg={currentView === v ? "#f59e0b" : "white"}
+            color={currentView === v ? "black" : "gray.600"}
+            border="1px solid"
+            borderColor={currentView === v ? "transparent" : "gray.300"}
+            fontWeight="500"
+            _hover={{ bg: currentView === v ? "#d97706" : "gray.100" }}
+            transition="colors 0.15s"
             size="sm"
           >
             {v.toUpperCase()}
@@ -186,15 +194,15 @@ export default function CalendarPage() {
       {/* CALENDAR */}
       {loading ? (
         <Flex justify="center" mt={10}>
-          <Spinner size="xl" color="yellow.300" />
+          <Spinner size="xl" color="#f59e0b" />
         </Flex>
       ) : (
         <Box
-          bg="#0F0F0F"
+          bg="white"
           p={{ base: 2, md: 5 }}
           borderRadius="lg"
-          border="1px solid #2A2A2A"
-          boxShadow="0 0 15px rgba(212, 175, 55, 0.1)"
+          border="1px solid"
+          borderColor="gray.200"
           overflowX={{ base: "auto", md: "visible" }}
         >
           <Calendar
@@ -218,8 +226,8 @@ export default function CalendarPage() {
                 return (
                   <Box
                     p={1}
-                    fontSize={currentView === "month" ? "xs" : "sm"}
-                    fontWeight="semibold"
+                    fontSize={currentView === "month" ? "0.75rem" : "0.875rem"}
+                    fontWeight="500"
                     overflow="hidden"
                     textOverflow="ellipsis"
                     whiteSpace="nowrap"
@@ -228,8 +236,8 @@ export default function CalendarPage() {
                       ? event.customer?.full_name || "Unknown Customer"
                       : (
                         <VStack align="start" gap={0}>
-                          <Text fontSize="sm" fontWeight="bold">{event.customer?.full_name || "Unknown"}</Text>
-                          <Text fontSize="xs">{event.rawData?.title || ""}</Text>
+                          <Text fontSize="0.875rem" fontWeight="500">{event.customer?.full_name || "Unknown"}</Text>
+                          <Text fontSize="0.75rem">{event.rawData?.title || ""}</Text>
                         </VStack>
                       )
                     }
@@ -239,11 +247,11 @@ export default function CalendarPage() {
             }}
             eventPropGetter={() => ({
               style: {
-                backgroundColor: "#D4AF37",
-                color: "#000",
+                backgroundColor: "#f59e0b",
+                color: "#000000",
                 borderRadius: "6px",
                 padding: "4px 6px",
-                border: "1px solid #00000033",
+                border: "none",
               },
             })}
           />
@@ -254,9 +262,9 @@ export default function CalendarPage() {
       <Dialog.Root open={open} onOpenChange={onClose} size="lg">
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="#111" color="white" border="1px solid #333">
+          <Dialog.Content bg="white" color="black" border="1px solid" borderColor="gray.200">
             <Dialog.Header>
-              <Heading size="md" color="gold.300">
+              <Heading size="md" color="black" fontWeight="500">
                 Appointment Details
               </Heading>
             </Dialog.Header>
@@ -266,14 +274,14 @@ export default function CalendarPage() {
               {selectedEvent && (
                 <VStack align="start" gap={4}>
                   <Box>
-                    <Text fontWeight="bold" color="gold.300">
+                    <Text fontWeight="500" color="black">
                       Customer:
                     </Text>
-                    <Text>{selectedEvent.customer?.full_name}</Text>
+                    <Text color="gray.600">{selectedEvent.customer?.full_name}</Text>
                   </Box>
                   {selectedEvent.customer?.phone && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Phone:
                       </Text>
                       <Link
@@ -288,7 +296,7 @@ export default function CalendarPage() {
 
                   {selectedEvent.customer?.email && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Email:
                       </Text>
                       <Link
@@ -303,7 +311,7 @@ export default function CalendarPage() {
 
                   {selectedEvent.customer?.address && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Address:
                       </Text>
                       <a
@@ -320,13 +328,13 @@ export default function CalendarPage() {
                   )}
 
                   <Box>
-                    <Text fontWeight="bold" color="gold.300">
+                    <Text fontWeight="500" color="black">
                       Date:
                     </Text>
-                    <Text>
+                    <Text color="gray.600">
                       {moment(selectedEvent.start).format("MMMM D, YYYY")}
                     </Text>
-                    <Text color="gray.400" fontSize="sm">
+                    <Text color="gray.400" fontSize="0.875rem">
                       {moment(selectedEvent.start).tz("America/New_York").format("h:mm A")} -{" "}
                       {moment(selectedEvent.end).tz("America/New_York").format("h:mm A")}
                     </Text>
@@ -334,19 +342,19 @@ export default function CalendarPage() {
 
                   {selectedEvent.description && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Description:
                       </Text>
-                      <Text>{selectedEvent.description}</Text>
+                      <Text color="gray.600">{selectedEvent.description}</Text>
                     </Box>
                   )}
 
                   {selectedEvent.customer?.notes && (
                     <Box>
-                      <Text fontWeight="bold" color="gold.300">
+                      <Text fontWeight="500" color="black">
                         Customer Notes:
                       </Text>
-                      <Text>{selectedEvent.customer.notes}</Text>
+                      <Text color="gray.600">{selectedEvent.customer.notes}</Text>
                     </Box>
                   )}
                 </VStack>
@@ -355,18 +363,35 @@ export default function CalendarPage() {
 
             <Dialog.Footer>
               <Flex gap={2} justify="space-between" w="full">
-                <Button variant="outline" onClick={onClose}>
+                <Button 
+                  variant="outline"
+                  border="1px solid"
+                  borderColor="gray.300"
+                  color="gray.600"
+                  fontWeight="500"
+                  _hover={{ bg: "gray.100" }}
+                  transition="colors 0.15s"
+                  onClick={onClose}
+                >
                   Close
                 </Button>
                 <Flex gap={2}>
                   <Button 
-                    colorScheme="blue" 
+                    bg="#f59e0b"
+                    color="black"
+                    fontWeight="500"
+                    _hover={{ bg: "#d97706" }}
+                    transition="colors 0.15s"
                     onClick={handleSendReminder}
                   >
                     Send Reminder
                   </Button>
                   <Button 
-                    colorScheme="red" 
+                    bg="red.600"
+                    color="white"
+                    fontWeight="500"
+                    _hover={{ bg: "red.700" }}
+                    transition="colors 0.15s"
                     onClick={handleCancelAppointment}
                   >
                     Cancel Appointment

@@ -1,23 +1,10 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Box, Heading, Text, Spinner, VStack, HStack, Badge } from "@chakra-ui/react";
+import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { Box, Heading, Text, Spinner, VStack, HStack } from "@chakra-ui/react";
 import { Checkbox } from "@chakra-ui/react";
 import { supabase } from "../lib/supabaseClient";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
-// Fix default marker icon issue with Webpack
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 type PipelineStage = "New" | "Contacted" | "Appointment Scheduled" | "Negotiation" | "Won" | "Lost";
 
@@ -47,6 +34,7 @@ export default function MapPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedStages, setSelectedStages] = useState<Set<PipelineStage>>(
     new Set(["New", "Contacted", "Appointment Scheduled", "Negotiation", "Won", "Lost"])
   );
@@ -84,30 +72,38 @@ export default function MapPage() {
     setGeocoding(true);
     const results: Customer[] = [];
 
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error("Google Maps API key is missing!");
+      setGeocoding(false);
+      return customers;
+    }
+
     for (const customer of customers) {
       try {
-        // Use Nominatim (free OpenStreetMap geocoding service)
+        // Use Google Geocoding API for accurate results
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(customer.address)}&limit=1`,
-          {
-            headers: {
-              "User-Agent": "Boss-CRM/1.0",
-            },
-          }
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(customer.address)}&key=${GOOGLE_MAPS_API_KEY}`
         );
 
         const data = await response.json();
         
-        if (data && data.length > 0) {
+        if (data.status === "OK" && data.results.length > 0) {
+          const location = data.results[0].geometry.location;
           results.push({
             ...customer,
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
+            lat: location.lat,
+            lng: location.lng,
           });
+          console.log(`✓ Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
+        } else {
+          console.warn(`✗ No geocoding results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
+          if (data.error_message) {
+            console.error(`API Error: ${data.error_message}`);
+          }
         }
 
-        // Rate limiting: wait 1 second between requests (Nominatim requirement)
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Small delay to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
         console.error(`Failed to geocode address for ${customer.full_name}:`, error);
       }
@@ -117,51 +113,15 @@ export default function MapPage() {
     return results;
   }
 
-  function createCustomIcon(stage: PipelineStage, customerName: string) {
-    const color = STAGE_COLORS[stage];
-    const svgIcon = `
-      <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 26 16 26s16-14 16-26c0-8.837-7.163-16-16-16z" 
-              fill="${color}" stroke="#000" stroke-width="1"/>
-        <circle cx="16" cy="16" r="6" fill="#fff"/>
-      </svg>
-    `;
-
-    const labelHtml = `
-      <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); white-space: nowrap;">
-        <div style="
-          background: rgba(0, 0, 0, 0.85);
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          border: 1px solid ${color};
-        ">
-          ${customerName}
-        </div>
-      </div>
-    `;
-
-    return L.divIcon({
-      html: labelHtml + svgIcon,
-      className: "custom-marker-with-label",
-      iconSize: [32, 42],
-      iconAnchor: [16, 42],
-      popupAnchor: [0, -42],
-    });
-  }
-
   if (loading || geocoding) {
     return (
       <Box>
-        <Heading mb={6} color="gold.300">
+        <Heading mb={6} color="black" fontWeight="500" fontSize="xl">
           Customer Map
         </Heading>
         <VStack h="400px" justify="center">
-          <Spinner size="xl" color="gold.400" />
-          <Text color="gray.400">
+          <Spinner size="xl" color="#f59e0b" />
+          <Text color="gray.600" fontSize="16px">
             {geocoding ? "Geocoding addresses... This may take a moment." : "Loading customers..."}
           </Text>
         </VStack>
@@ -172,20 +132,21 @@ export default function MapPage() {
   if (customers.length === 0) {
     return (
       <Box>
-        <Heading mb={6} color="gold.300">
+        <Heading mb={6} color="black" fontWeight="500" fontSize="xl">
           Customer Map
         </Heading>
         <Box
-          bg="gray.800"
-          border="1px solid #2A2A2A"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
           borderRadius="lg"
           p={8}
           textAlign="center"
         >
-          <Text color="gray.400" fontSize="lg">
+          <Text color="gray.600" fontSize="18px">
             No customers with valid addresses found.
           </Text>
-          <Text color="gray.500" fontSize="sm" mt={2}>
+          <Text color="gray.400" fontSize="0.875rem" mt={2}>
             Add addresses to your customers to see them on the map.
           </Text>
         </Box>
@@ -206,17 +167,26 @@ export default function MapPage() {
 
   return (
     <Box>
-      <Heading mb={4} color="gold.300">
+      <Heading mb={4} color="black" fontWeight="500" fontSize="xl">
         Customer Map
       </Heading>
 
-      <Text color="gray.400" mb={4}>
+      <Text color="gray.600" mb={4} fontSize="16px">
         Showing {filteredCustomers.length} of {customers.length} customer{customers.length !== 1 ? "s" : ""}
       </Text>
 
       {/* Filter Controls */}
-      <Box mb={4} p={4} bg="gray.800" borderRadius="md" border="1px solid #2A2A2A">
-        <Text fontWeight="semibold" color="white" mb={3}>
+      <Box 
+        mb={4} 
+        p={4} 
+        bg="white" 
+        borderRadius="md" 
+        border="1px solid" 
+        borderColor="gray.200"
+        _hover={{ boxShadow: "lg" }}
+        transition="shadow 0.15s"
+      >
+        <Text fontWeight="500" color="black" mb={3} fontSize="16px">
           Filter by Pipeline Stage:
         </Text>
         <HStack gap={4} flexWrap="wrap">
@@ -225,14 +195,13 @@ export default function MapPage() {
               key={stage}
               checked={selectedStages.has(stage as PipelineStage)}
               onCheckedChange={() => toggleStage(stage as PipelineStage)}
-              colorPalette="yellow"
             >
               <Checkbox.HiddenInput />
-              <Checkbox.Control />
+              <Checkbox.Control borderColor="gray.300" />
               <Checkbox.Label>
                 <HStack gap={2}>
                   <Box w="12px" h="12px" borderRadius="full" bg={color} />
-                  <Text color="gray.300" fontSize="sm">
+                  <Text color="gray.600" fontSize="0.875rem" fontWeight="400">
                     {stage}
                   </Text>
                 </HStack>
@@ -245,73 +214,121 @@ export default function MapPage() {
       {/* Map */}
       <Box
         h="600px"
-        border="1px solid #2A2A2A"
+        border="1px solid"
+        borderColor="gray.200"
         borderRadius="lg"
         overflow="hidden"
+        bg="white"
       >
-        <MapContainer
-          center={[centerLat, centerLng]}
-          zoom={10}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+          <Map
+            defaultCenter={{
+              lat: centerLat,
+              lng: centerLng
+            }}
+            defaultZoom={10}
+            mapId="boss-crm-map"
+            style={{ width: "100%", height: "100%" }}
+          >
+            {filteredCustomers.map((customer) => {
+              if (!customer.lat || !customer.lng) return null;
 
-          {filteredCustomers.map((customer) => {
-            if (!customer.lat || !customer.lng) return null;
+              const stageColor = STAGE_COLORS[customer.pipeline_stage];
 
-            return (
-              <Marker
-                key={customer.id}
-                position={[customer.lat, customer.lng]}
-                icon={createCustomIcon(customer.pipeline_stage, customer.full_name)}
-              >
-                <Popup>
-                  <Box p={2} minW="200px">
-                    <Text fontWeight="bold" fontSize="md" mb={1}>
+              return (
+                <AdvancedMarker
+                  key={customer.id}
+                  position={{ lat: customer.lat, lng: customer.lng }}
+                  title={`${customer.full_name} - ${customer.pipeline_stage}`}
+                  onClick={() => setSelectedCustomer(customer)}
+                >
+                  <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+                    <div style={{
+                      background: 'white',
+                      color: 'black',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      marginBottom: '4px'
+                    }}>
                       {customer.full_name}
-                    </Text>
-                    <Badge
-                      colorScheme={
-                        customer.pipeline_stage === "Won" ? "green" :
-                        customer.pipeline_stage === "Lost" ? "red" :
-                        customer.pipeline_stage === "Negotiation" ? "yellow" :
-                        "blue"
-                      }
-                      mb={2}
-                    >
-                      {customer.pipeline_stage}
-                    </Badge>
-                    <VStack align="start" gap={1} fontSize="sm">
-                      {customer.phone && (
-                        <Text>📞 {customer.phone}</Text>
-                      )}
-                      {customer.email && (
-                        <Text>📧 {customer.email}</Text>
-                      )}
-                      {customer.job_type && (
-                        <Text>🔨 {customer.job_type}</Text>
-                      )}
-                      {customer.estimated_price && (
-                        <Text>💰 ${customer.estimated_price.toLocaleString()}</Text>
-                      )}
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.address)}`}
+                    </div>
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        backgroundColor: stageColor,
+                        border: "3px solid white",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+                      }}
+                    />
+                  </div>
+                </AdvancedMarker>
+              );
+            })}
+            
+            {/* InfoWindow for Customer */}
+            {selectedCustomer && selectedCustomer.lat && selectedCustomer.lng && (
+              <InfoWindow
+                position={{ lat: selectedCustomer.lat, lng: selectedCustomer.lng }}
+                onCloseClick={() => setSelectedCustomer(null)}
+              >
+                <div style={{ padding: '8px', minWidth: '200px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>
+                    {selectedCustomer.full_name}
+                  </h3>
+                  {selectedCustomer.phone && (
+                    <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                      📞 {selectedCustomer.phone}
+                    </p>
+                  )}
+                  {selectedCustomer.email && (
+                    <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                      ✉️ {selectedCustomer.email}
+                    </p>
+                  )}
+                  {selectedCustomer.address && (
+                    <p style={{ margin: '4px 0', fontSize: '12px' }}>
+                      📍 <a 
+                        href={`https://maps.google.com/?q=${encodeURIComponent(selectedCustomer.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#63B3ED", fontSize: "12px", marginTop: "4px", display: "block" }}
+                        style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                       >
-                        📍 {customer.address}
+                        {selectedCustomer.address}
                       </a>
-                    </VStack>
-                  </Box>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
+                    </p>
+                  )}
+                  {selectedCustomer.pipeline_stage && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                        backgroundColor: STAGE_COLORS[selectedCustomer.pipeline_stage],
+                        color: 'white'
+                      }}>
+                        {selectedCustomer.pipeline_stage}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCustomer.estimated_price && (
+                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', fontWeight: '500' }}>
+                      💰 ${Number(selectedCustomer.estimated_price).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </InfoWindow>
+            )}
+          </Map>
+        </APIProvider>
       </Box>
     </Box>
   );

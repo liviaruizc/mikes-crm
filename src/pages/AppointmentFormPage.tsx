@@ -254,10 +254,18 @@ export default function AppointmentFormPage() {
   return (
     <Box p={8}>
       <Flex justify="space-between" align="center" mb={6}>
-        <Heading color="gold.300">
+        <Heading color="black" fontWeight="500" fontSize="xl">
           New Appointment
         </Heading>
-        <Button size="sm" variant="outline" colorScheme="yellow" onClick={onOpen} color="white">
+        <Button 
+          size="sm" 
+          bg="#f59e0b"
+          color="black"
+          fontWeight="500"
+          _hover={{ bg: "#d97706" }}
+          transition="colors 0.15s"
+          onClick={onOpen}
+        >
           + New Customer
         </Button>
       </Flex>
@@ -265,14 +273,18 @@ export default function AppointmentFormPage() {
       <VStack gap={5} maxW="600px" mx="auto">
         {/* CUSTOMER */}
         <Field.Root required w="full" invalid={errors.customer_id}>
-          <Field.Label>Customer *</Field.Label>
+          <Field.Label fontWeight="500" color="black">Customer *</Field.Label>
           <NativeSelectRoot>
             <NativeSelectField
               placeholder="Select a customer"
               name="customer_id"
               value={form.customer_id}
               onChange={handleChange}
-              color="white"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.300"
+              color="black"
+              _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
             >
               <option value="" style={{ color: 'black' }}>Select a customer</option>
               {customers.map((c) => (
@@ -283,144 +295,176 @@ export default function AppointmentFormPage() {
             </NativeSelectField>
           </NativeSelectRoot>
           {errors.customer_id && (
-            <Field.ErrorText color="red.400">Customer is required</Field.ErrorText>
+            <Field.ErrorText color="red.600">Customer is required</Field.ErrorText>
           )}
         </Field.Root>
 
         {/* CUSTOMER NAME */}
         <Field.Root w="full">
-          <Field.Label>Customer Name</Field.Label>
+          <Field.Label fontWeight="500" color="black">Customer Name</Field.Label>
           <Input
             name="customer_name"
             value={form.customer_name}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* CUSTOMER PHONE */}
         <Field.Root w="full">
-          <Field.Label>Phone</Field.Label>
+          <Field.Label fontWeight="500" color="black">Phone</Field.Label>
           <Input
             name="customer_phone"
             value={form.customer_phone}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* CUSTOMER EMAIL */}
         <Field.Root w="full">
-          <Field.Label>Email</Field.Label>
+          <Field.Label fontWeight="500" color="black">Email</Field.Label>
           <Input
             name="customer_email"
             type="email"
             value={form.customer_email}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* CUSTOMER ADDRESS */}
         <Field.Root w="full">
-          <Field.Label>Address</Field.Label>
+          <Field.Label fontWeight="500" color="black">Address</Field.Label>
           <Input
             name="customer_address"
             value={form.customer_address}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* JOB TYPE */}
         <Field.Root w="full">
-          <Field.Label>Job Type</Field.Label>
+          <Field.Label fontWeight="500" color="black">Job Type</Field.Label>
           <Input
             name="job_type"
             placeholder="e.g., Roof Repair, Kitchen Remodel"
             value={form.job_type}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* ESTIMATED PRICE */}
         <Field.Root w="full">
-          <Field.Label>Estimated Price</Field.Label>
+          <Field.Label fontWeight="500" color="black">Estimated Price</Field.Label>
           <Input
             name="estimated_price"
             type="number"
             placeholder="0.00"
             value={form.estimated_price}
             onChange={handleChange}
-            color="white"
-            bg="gray.800"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* TITLE */}
         <Field.Root w="full">
-          <Field.Label>Appointment Title</Field.Label>
+          <Field.Label fontWeight="500" color="black">Appointment Title</Field.Label>
           <Input
             name="title"
             placeholder="Estimate, consultation, meeting..."
             value={form.title}
             onChange={handleChange}
-            color="white"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* DESCRIPTION */}
         <Field.Root w="full">
-          <Field.Label>Description</Field.Label>
+          <Field.Label fontWeight="500" color="black">Description</Field.Label>
           <Textarea
             name="description"
             placeholder="Optional description"
             value={form.description}
             onChange={handleChange}
-            color="white"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
           />
         </Field.Root>
 
         {/* DATE */}
         <Field.Root required w="full" invalid={errors.date}>
-          <Field.Label>Date *</Field.Label>
+          <Field.Label fontWeight="500" color="black">Date *</Field.Label>
           <Input
             type="date"
             name="date"
             value={form.date}
             onChange={handleChange}
-            color="white"
+            bg="white"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
             css={{
-              colorScheme: 'dark',
+              colorScheme: 'light',
               '&::-webkit-calendar-picker-indicator': {
-                filter: 'brightness(0) saturate(100%) invert(77%) sepia(55%) saturate(449%) hue-rotate(358deg) brightness(98%) contrast(94%)',
                 cursor: 'pointer',
                 opacity: '1 !important'
               }
             }}
           />
           {errors.date && (
-            <Field.ErrorText color="red.400">Date is required</Field.ErrorText>
+            <Field.ErrorText color="red.600">Date is required</Field.ErrorText>
           )}
         </Field.Root>
 
         {/* START TIME */}
         <Field.Root required w="full" invalid={errors.time}>
-          <Field.Label>Start Time *</Field.Label>
+          <Field.Label fontWeight="500" color="black">Start Time *</Field.Label>
           <Flex gap={3}>
             <NativeSelectRoot flex={2}>
               <NativeSelectField
                 name="time"
                 value={form.time}
                 onChange={handleChange}
-                bg="#0f0f0f"
-                color="gray"
+                bg="white"
+                border="1px solid"
+                borderColor="gray.300"
+                color="black"
+                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
               >
                 <option value="">Select time</option>
                 {timeSlots.map((slot) => {
@@ -438,8 +482,11 @@ export default function AppointmentFormPage() {
                 name="period"
                 value={form.period}
                 onChange={handleChange}
-                bg="#0f0f0f"
-                color="gray"
+                bg="white"
+                border="1px solid"
+                borderColor="gray.300"
+                color="black"
+                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
               >
                 <option value="AM">AM</option>
                 <option value="PM">PM</option>
@@ -447,17 +494,20 @@ export default function AppointmentFormPage() {
             </NativeSelectRoot>
           </Flex>
           {errors.time && (
-            <Field.ErrorText color="red.400">Time is required</Field.ErrorText>
+            <Field.ErrorText color="red.600">Time is required</Field.ErrorText>
           )}
         </Field.Root>
 
         <Button
-          colorScheme="yellow"
+          bg="#f59e0b"
+          color="black"
+          fontWeight="500"
           w="full"
           size="lg"
+          _hover={{ bg: "#d97706" }}
+          transition="colors 0.15s"
           onClick={handleSubmit}
           loading={loading}
-          color="white"
         >
           Create Appointment
         </Button>
