@@ -498,19 +498,35 @@ export default function AppointmentFormPage() {
           )}
         </Field.Root>
 
-        <Button
-          bg="#f59e0b"
-          color="black"
-          fontWeight="500"
-          w="full"
-          size="lg"
-          _hover={{ bg: "#d97706" }}
-          transition="colors 0.15s"
-          onClick={handleSubmit}
-          loading={loading}
-        >
-          Create Appointment
-        </Button>
+        <Flex gap={3} w="full">
+          <Button
+            variant="outline"
+            border="1px solid"
+            borderColor="gray.300"
+            color="black"
+            fontWeight="500"
+            flex={1}
+            size="lg"
+            _hover={{ bg: "gray.100" }}
+            transition="colors 0.15s"
+            onClick={() => navigate("/")}
+          >
+            Cancel
+          </Button>
+          <Button
+            bg="#f59e0b"
+            color="black"
+            fontWeight="500"
+            flex={1}
+            size="lg"
+            _hover={{ bg: "#d97706" }}
+            transition="colors 0.15s"
+            onClick={handleSubmit}
+            loading={loading}
+          >
+            Create Appointment
+          </Button>
+        </Flex>
       </VStack>
 
       {/* Customer Form Modal */}

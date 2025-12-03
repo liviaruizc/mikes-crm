@@ -207,6 +207,49 @@ export default function HomePage() {
     onOpen();
   }
 
+  async function handleSendReminder() {
+    if (!selectedAppointment) return;
+
+    const appointmentDate = moment(selectedAppointment.start_time).tz("America/New_York").format("MMMM D, YYYY");
+    const appointmentTime = moment(selectedAppointment.start_time).tz("America/New_York").format("h:mm A");
+    const customerName = selectedAppointment.customers?.full_name || "Customer";
+    const customerPhone = selectedAppointment.customers?.phone;
+
+    // Message to owner
+    const ownerMessage = `Reminder: Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}. Location: ${selectedAppointment.customers?.address || 'No address'}`;
+    
+    // Message to customer
+    const customerMessage = `Hi ${customerName}! This is a reminder about your appointment with Mike Renovations on ${appointmentDate} at ${appointmentTime}. See you then!`;
+
+    try {
+      // Send SMS to owner
+      const ownerPhone = "+12392005772";
+      await sendSMS(ownerPhone, ownerMessage);
+
+      // Send SMS to customer if they have a phone number
+      if (customerPhone) {
+        await sendSMS(customerPhone, customerMessage);
+      }
+
+      alert("Reminder sent successfully!");
+    } catch (error) {
+      console.error("Failed to send reminder:", error);
+      alert("Failed to send reminder.");
+    }
+  }
+
+  async function sendSMS(to: string, message: string) {
+    const response = await fetch('http://localhost:3001/api/send-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, message }),
+    });
+
+    if (!response.ok) {
+      throw new Error('SMS send failed');
+    }
+  }
+
   async function handleCancelAppointment() {
     if (!selectedAppointment?.id) return;
 
@@ -810,7 +853,7 @@ export default function HomePage() {
                         Address:
                       </Text>
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAppointment.customers.address)}`}
+                        href={`geo:0,0?q=${encodeURIComponent(selectedAppointment.customers.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "#63B3ED", textDecoration: "none" }}
@@ -859,37 +902,41 @@ export default function HomePage() {
             <Dialog.Footer>
               <Flex gap={2} justify="space-between" w="full">
                 <Button 
-                  variant="outline"
-                  border="1px solid"
-                  borderColor="gray.300"
+                  variant="ghost"
                   color="gray.600"
-                  fontWeight="500"
+                  size="sm"
                   _hover={{ bg: "gray.100" }}
-                  transition="colors 0.15s"
                   onClick={onClose}
                 >
                   Close
                 </Button>
                 <Flex gap={2}>
                   <Button 
-                    bg="#f59e0b"
-                    color="black"
-                    fontWeight="500"
-                    _hover={{ bg: "#d97706" }}
-                    transition="colors 0.15s"
+                    variant="ghost"
+                    color="blue.600"
+                    size="sm"
+                    _hover={{ bg: "blue.50" }}
+                    onClick={handleSendReminder}
+                  >
+                    Send Reminder
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    color="orange.600"
+                    size="sm"
+                    _hover={{ bg: "orange.50" }}
                     onClick={() => {
                       onClose();
                       navigate("/calendar");
                     }}
                   >
-                    Go to Calendar
+                    View in Calendar
                   </Button>
                   <Button 
-                    bg="red.600"
-                    color="white"
-                    fontWeight="500"
-                    _hover={{ bg: "red.700" }}
-                    transition="colors 0.15s"
+                    variant="ghost"
+                    color="red.600"
+                    size="sm"
+                    _hover={{ bg: "red.50" }}
                     onClick={handleCancelAppointment}
                   >
                     Cancel Appointment

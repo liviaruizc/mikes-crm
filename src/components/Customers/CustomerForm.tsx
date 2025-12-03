@@ -26,6 +26,7 @@ export default function CustomerForm({
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
+    phone_country: "US",
     email: "",
     street_address: "",
     city: "",
@@ -59,6 +60,7 @@ export default function CustomerForm({
       setForm({
         full_name: existingCustomer.full_name || "",
         phone: existingCustomer.phone || "",
+        phone_country: (existingCustomer as any).phone_country || "US",
         email: existingCustomer.email || "",
         street_address: street,
         city: city,
@@ -74,6 +76,7 @@ export default function CustomerForm({
       setForm({
         full_name: "",
         phone: "",
+        phone_country: "US",
         email: "",
         street_address: "",
         city: "",
@@ -112,6 +115,7 @@ export default function CustomerForm({
       const dataToSubmit = {
         full_name: form.full_name,
         phone: form.phone,
+        phone_country: form.phone_country,
         email: form.email || null,
         address: fullAddress || null,
         notes: form.notes || null,
@@ -203,6 +207,28 @@ export default function CustomerForm({
                 {errors.phone && (
                   <Field.ErrorText color="red.600">Phone is required</Field.ErrorText>
                 )}
+              </Field.Root>
+
+              <Field.Root>
+                <Field.Label fontWeight="500" color="black">Phone Country/Region</Field.Label>
+                <NativeSelectRoot>
+                  <NativeSelectField
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.300"
+                    color="black"
+                    _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                    value={form.phone_country}
+                    onChange={(e) => updateField("phone_country", e.target.value)}
+                  >
+                    <option value="US">United States (+1)</option>
+                    <option value="CA">Canada (+1)</option>
+                    <option value="MX">Mexico (+52)</option>
+                    <option value="GB">United Kingdom (+44)</option>
+                    <option value="AU">Australia (+61)</option>
+                    <option value="Other">Other</option>
+                  </NativeSelectField>
+                </NativeSelectRoot>
               </Field.Root>
 
               <Field.Root>

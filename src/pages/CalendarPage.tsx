@@ -120,7 +120,7 @@ export default function CalendarPage() {
 
     try {
       // Send SMS to owner (you'll need to configure your phone number)
-      const ownerPhone = "+19417633317"; // Replace with your phone number
+      const ownerPhone = "+12392005772"; // Replace with your phone number
       await sendSMS(ownerPhone, ownerMessage);
 
       // Temporarily disabled - only send to owner for testing
@@ -315,12 +315,12 @@ export default function CalendarPage() {
                         Address:
                       </Text>
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.customer.address)}`}
+                        href={`geo:0,0?q=${encodeURIComponent(selectedEvent.customer.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "#63B3ED", textDecoration: "none" }}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                        onMouseEnter={(e: any) => e.currentTarget.style.textDecoration = "underline"}
+                        onMouseLeave={(e: any) => e.currentTarget.style.textDecoration = "none"}
                       >
                         📍 {selectedEvent.customer.address}
                       </a>

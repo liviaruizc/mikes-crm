@@ -130,10 +130,10 @@ export default function AppLayout() {
         zIndex={10}
       >
         {[
-          { to: '/', icon: '🏠', label: 'Home' },
-          { to: '/calendar', icon: '📅', label: 'Calendar' },
-          { to: '/customers', icon: '👥', label: 'Customers' },
-          { to: '/map', icon: '🗺️', label: 'Map' },
+          { to: '/', label: 'Home', icon: '🏠' },
+          { to: '/calendar', label: 'Calendar', icon: '📅' },
+          { to: '/customers', label: 'Customers', icon: '👥' },
+          { to: '/map', label: 'Map', icon: '🗺️' },
         ].map((link) => (
           <NavLink
             key={link.to}
