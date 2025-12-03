@@ -20,7 +20,7 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Your phone number for owner reminders
-const OWNER_PHONE = '2392005772';
+const OWNER_PHONE = '9417633317';
 
 
 const app = express();
@@ -145,10 +145,23 @@ async function sendVonageSMS(to, message) {
       text: message,
     });
 
+    // Check if message was actually sent successfully
+    if (result.messages && result.messages[0]) {
+      const msg = result.messages[0];
+      if (msg.status === '0') {
+        console.log(`✅ SMS sent to ${to} - Message ID: ${msg['message-id']}`);
+        return { success: true, result };
+      } else {
+        console.error(`❌ SMS failed to ${to} - Status: ${msg.status}, Error: ${msg['error-text']}`);
+        return { success: false, error: msg['error-text'] || 'SMS failed' };
+      }
+    }
+    
     console.log(`✅ SMS sent to ${to}`);
     return { success: true, result };
   } catch (error) {
     console.error('❌ Vonage error:', error.message);
+    console.error('Full error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -164,7 +177,7 @@ async function checkAndSendReminders() {
   const windowEnd = new Date(tomorrow.getTime() + 30 * 60 * 1000);   // 24.5 hours
 
   try {
-    // Fetch appointments in the 24-hour window
+    // Fetch appointments in the 24-hour window with customer pipeline_stage
     const { data: appointments, error } = await supabase
       .from('appointments')
       .select(`
@@ -177,7 +190,8 @@ async function checkAndSendReminders() {
           id,
           full_name,
           phone,
-          address
+          address,
+          pipeline_stage
         )
       `)
       .gte('start_time', windowStart.toISOString())
@@ -217,12 +231,15 @@ async function checkAndSendReminders() {
       // Message to customer
       const customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment with Mike Renovations on ${formattedDate} at ${formattedTime}. See you then!`;
 
-      // Send to owner
+      // Send to owner (always)
       await sendVonageSMS(OWNER_PHONE, ownerMessage);
 
-      // Send to customer (if they have a phone number)
-      if (customer?.phone) {
+      // Send to customer only if they're in "Appointment Scheduled" status and have a phone number
+      if (customer?.phone && customer?.pipeline_stage === 'Appointment Scheduled') {
         await sendVonageSMS(customer.phone, customerMessage);
+        console.log(`✅ Sent reminder to customer: ${customer?.full_name}`);
+      } else if (customer?.pipeline_stage !== 'Appointment Scheduled') {
+        console.log(`⚠️ Customer ${customer?.full_name} is not in "Appointment Scheduled" status. Only owner notified.`);
       } else {
         console.log(`⚠️ No phone number for customer: ${customer?.full_name}`);
       }

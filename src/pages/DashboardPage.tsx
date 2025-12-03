@@ -98,7 +98,6 @@ export default function DashboardPage() {
         title,
         description,
         start_time,
-        pipeline_stage,
         customer_id,
         customers (
           full_name,
@@ -148,7 +147,7 @@ export default function DashboardPage() {
       return {
         id: `cust-${customer.id}`,
         type: "customer",
-        pipeline_stage: appointment ? "Appointment Scheduled" : customer.pipeline_stage,
+        pipeline_stage: customer.pipeline_stage,
         title: customer.full_name || "Unnamed customer",
         customerName: customer.full_name,
         phone: customer.phone,
