@@ -8,6 +8,7 @@ import CustomersPage from "./pages/CustomersPage";
 import AppointmentFormPage from "./pages/AppointmentFormPage";
 import MapPage from "./pages/MapPage";
 import DealsPage from "./pages/DealsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/appointments/new" element={<AppointmentFormPage />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );

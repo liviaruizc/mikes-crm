@@ -19,8 +19,25 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Your phone number for owner reminders
-const OWNER_PHONE = '9417633317';
+// Helper function to get owner phone from database
+async function getOwnerPhone() {
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('owner_phone')
+      .single();
+    
+    if (error || !data?.owner_phone) {
+      console.log('⚠️ No owner phone in database, using default: 9417633317');
+      return '9417633317';
+    }
+    
+    return data.owner_phone;
+  } catch (err) {
+    console.error('Error fetching owner phone:', err);
+    return '9417633317'; // Fallback
+  }
+}
 
 
 const app = express();
@@ -231,8 +248,11 @@ async function checkAndSendReminders() {
       // Message to customer
       const customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment with Mike Renovations on ${formattedDate} at ${formattedTime}. See you then!`;
 
+      // Get owner phone from database
+      const ownerPhone = await getOwnerPhone();
+
       // Send to owner (always)
-      await sendVonageSMS(OWNER_PHONE, ownerMessage);
+      await sendVonageSMS(ownerPhone, ownerMessage);
 
       // Send to customer only if they're in "Appointment Scheduled" status and have a phone number
       if (customer?.phone && customer?.pipeline_stage === 'Appointment Scheduled') {

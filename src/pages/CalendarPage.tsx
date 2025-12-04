@@ -119,8 +119,15 @@ export default function CalendarPage() {
     //const customerMessage = `Hi ${customerName}, this is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}. See you then!`;
 
     try {
-      // Send SMS to owner (you'll need to configure your phone number)
-      const ownerPhone = "+12392005772"; // Replace with your phone number
+      // Get owner phone from settings
+      const { data: settings } = await supabase
+        .from('settings')
+        .select('owner_phone')
+        .single();
+      
+      const ownerPhone = settings?.owner_phone || "+19417633317";
+      
+      // Send SMS to owner
       await sendSMS(ownerPhone, ownerMessage);
 
       // Temporarily disabled - only send to owner for testing

@@ -222,8 +222,15 @@ export default function HomePage() {
     const customerMessage = `Hi ${customerName}! This is a reminder about your appointment with Mike Renovations on ${appointmentDate} at ${appointmentTime}. See you then!`;
 
     try {
+      // Get owner phone from settings
+      const { data: settings } = await supabase
+        .from('settings')
+        .select('owner_phone')
+        .single();
+      
+      const ownerPhone = settings?.owner_phone || "+19417633317";
+      
       // Send SMS to owner
-      const ownerPhone = "+12392005772";
       await sendSMS(ownerPhone, ownerMessage);
 
       // Send SMS to customer if they have a phone number

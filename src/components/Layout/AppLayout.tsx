@@ -12,6 +12,7 @@ export default function AppLayout() {
     { to: '/deals', label: 'Deals' },
     { to: '/pipeline', label: 'Pipeline' },
     { to: '/map', label: 'Map' },
+    { to: '/settings', label: 'Settings' },
   ];
 
   const NavLinkItem = ({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) => (
