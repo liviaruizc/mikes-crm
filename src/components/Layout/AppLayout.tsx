@@ -1,8 +1,15 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { VStack, Box, Flex, Heading, IconButton, useDisclosure, Drawer } from '@chakra-ui/react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { VStack, Box, Flex, Heading, IconButton, useDisclosure, Drawer, Button, createToaster } from '@chakra-ui/react';
+import { supabase } from '../../lib/supabaseClient';
+
+const toaster = createToaster({
+  placement: "top",
+  duration: 3000,
+});
 
 export default function AppLayout() {
   const { open, onOpen, onClose } = useDisclosure();
+  const navigate = useNavigate();
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -14,6 +21,25 @@ export default function AppLayout() {
     { to: '/map', label: 'Map' },
     { to: '/settings', label: 'Settings' },
   ];
+
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+      toaster.create({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+        type: "success",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toaster.create({
+        title: "Error",
+        description: "Failed to log out.",
+        type: "error",
+      });
+    }
+  }
 
   const NavLinkItem = ({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) => (
     <NavLink
@@ -79,6 +105,19 @@ export default function AppLayout() {
             {navLinks.map((link) => (
               <NavLinkItem key={link.to} to={link.to} label={link.label} />
             ))}
+            <Button
+              w="full"
+              mt={4}
+              bg="transparent"
+              color="red.400"
+              border="1px solid"
+              borderColor="red.400"
+              fontWeight="500"
+              _hover={{ bg: "red.400", color: "white" }}
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
           </VStack>
         </Box>
 
@@ -98,6 +137,19 @@ export default function AppLayout() {
                   {navLinks.map((link) => (
                     <NavLinkItem key={link.to} to={link.to} label={link.label} onClick={onClose} />
                   ))}
+                  <Button
+                    w="full"
+                    mt={4}
+                    bg="transparent"
+                    color="red.400"
+                    border="1px solid"
+                    borderColor="red.400"
+                    fontWeight="500"
+                    _hover={{ bg: "red.400", color: "white" }}
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
                 </VStack>
               </Drawer.Body>
             </Drawer.Content>

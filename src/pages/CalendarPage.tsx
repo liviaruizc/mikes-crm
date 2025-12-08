@@ -15,7 +15,7 @@ import {
 import { Calendar, momentLocalizer, Views, type View } from "react-big-calendar";
 import moment from "moment-timezone";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { supabase } from "../lib/supabaseClient";
+import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "../calendar-fix.css";
 
@@ -120,9 +120,11 @@ export default function CalendarPage() {
 
     try {
       // Get owner phone from settings
+      const userId = await getCurrentUserId();
       const { data: settings } = await supabase
         .from('settings')
         .select('owner_phone')
+        .eq('user_id', userId)
         .single();
       
       const ownerPhone = settings?.owner_phone || "+19417633317";

@@ -14,7 +14,7 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
+import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import CustomerForm from "../components/Customers/CustomerForm";
 
 const toaster = createToaster({
@@ -221,6 +221,17 @@ export default function AppointmentFormPage() {
     
     const endTime = `${datePart}T${endHour.toString().padStart(2, '0')}:${minuteStr}:00-05:00`;
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      toaster.create({
+        title: "Error",
+        description: "You must be logged in to create appointments.",
+        type: "error",
+      });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("appointments").insert([
       {
         customer_id: form.customer_id,
@@ -228,6 +239,7 @@ export default function AppointmentFormPage() {
         description: form.description,
         start_time: form.start_time,
         end_time: endTime,
+        user_id: userId,
       },
     ]);
 

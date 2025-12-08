@@ -1,7 +1,7 @@
 import { Box, Text, SimpleGrid, Button, VStack, HStack, Spinner, Dialog, Heading, useDisclosure, Flex } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import moment from "moment-timezone";
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
 import { Users, TrendingUp, Calendar, Plus } from "lucide-react";
@@ -223,9 +223,11 @@ export default function HomePage() {
 
     try {
       // Get owner phone from settings
+      const userId = await getCurrentUserId();
       const { data: settings } = await supabase
         .from('settings')
         .select('owner_phone')
+        .eq('user_id', userId)
         .single();
       
       const ownerPhone = settings?.owner_phone || "+19417633317";

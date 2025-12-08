@@ -9,7 +9,7 @@ import {
   createToaster,
   Text,
 } from "@chakra-ui/react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 
 const toaster = createToaster({
   placement: "top",
@@ -27,9 +27,13 @@ export default function SettingsPage() {
 
   async function loadSettings() {
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { data, error } = await supabase
         .from("settings")
         .select("owner_phone")
+        .eq("user_id", userId)
         .single();
 
       if (error && error.code !== "PGRST116") {
@@ -49,10 +53,22 @@ export default function SettingsPage() {
     setLoading(true);
 
     try {
-      // First check if settings row exists
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        toaster.create({
+          title: "Error",
+          description: "You must be logged in to save settings.",
+          type: "error",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // First check if settings row exists for this user
       const { data: existing } = await supabase
         .from("settings")
         .select("id")
+        .eq("user_id", userId)
         .single();
 
       let error;
@@ -67,7 +83,7 @@ export default function SettingsPage() {
         // Insert new row
         ({ error } = await supabase
           .from("settings")
-          .insert([{ owner_phone: ownerPhone }]));
+          .insert([{ owner_phone: ownerPhone, user_id: userId }]));
       }
 
       if (error) throw error;

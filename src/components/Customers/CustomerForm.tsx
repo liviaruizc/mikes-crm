@@ -9,7 +9,7 @@ import {
   NativeSelectField,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase, getCurrentUserId } from "../../lib/supabaseClient";
 import type { Customer } from "../../lib/types";
 
 export default function CustomerForm({ 
@@ -140,7 +140,16 @@ export default function CustomerForm({
         console.log("Customer updated successfully");
       } else {
         // Insert new customer
-        const { error } = await supabase.from("customers").insert([dataToSubmit]);
+        const userId = await getCurrentUserId();
+        if (!userId) {
+          alert("You must be logged in to create customers");
+          return;
+        }
+
+        const { error } = await supabase.from("customers").insert([{
+          ...dataToSubmit,
+          user_id: userId
+        }]);
         
         if (error) {
           console.error("Insert error:", error);
