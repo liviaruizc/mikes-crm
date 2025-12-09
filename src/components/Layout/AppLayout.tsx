@@ -74,7 +74,7 @@ export default function AppLayout() {
         justifyContent="space-between"
       >
         <Heading size="md" color="#f59e0b">
-          Mike's CRM
+          Contractor's CRM
         </Heading>
         <IconButton
           aria-label="Open menu"
@@ -99,7 +99,7 @@ export default function AppLayout() {
           overflowY="auto"
         >
           <Heading size="lg" color="#f59e0b" mb={8}>
-            Mike's CRM
+            Contractor's CRM
           </Heading>
           <VStack align="start" gap="3" w="full">
             {navLinks.map((link) => (
@@ -128,7 +128,7 @@ export default function AppLayout() {
             <Drawer.Content bg="#000000">
               <Drawer.Header borderBottom="1px solid" borderColor="gray.700">
                 <Heading size="md" color="#f59e0b">
-                  Mike's CRM
+                  Contractor's CRM
                 </Heading>
               </Drawer.Header>
               <Drawer.CloseTrigger />
