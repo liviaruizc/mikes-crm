@@ -16,6 +16,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import CustomerForm from "../components/Customers/CustomerForm";
+import { scheduleAppointmentNotification } from "../lib/notificationService";
 
 const toaster = createToaster({
   placement: "top",
@@ -232,7 +233,7 @@ export default function AppointmentFormPage() {
       return;
     }
 
-    const { error } = await supabase.from("appointments").insert([
+    const { data, error } = await supabase.from("appointments").insert([
       {
         customer_id: form.customer_id,
         title: form.title || "Appointment",
@@ -241,7 +242,7 @@ export default function AppointmentFormPage() {
         end_time: endTime,
         user_id: userId,
       },
-    ]);
+    ]).select('id').single();
 
     setLoading(false);
 
@@ -253,6 +254,17 @@ export default function AppointmentFormPage() {
         type: "error",
       });
     } else {
+      // Schedule notification for 24 hours before appointment
+      const selectedCustomer = customers.find(c => c.id === form.customer_id);
+      if (data && selectedCustomer) {
+        await scheduleAppointmentNotification(
+          data.id,
+          selectedCustomer.full_name,
+          new Date(form.start_time),
+          form.title || "Appointment"
+        );
+      }
+
       toaster.create({
         title: "Success",
         description: "Appointment created successfully.",

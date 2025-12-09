@@ -5,6 +5,7 @@ import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import moment from "moment-timezone";
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
 import { Users, TrendingUp, Calendar, Plus } from "lucide-react";
+import { cancelAppointmentNotification } from "../lib/notificationService";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -272,6 +273,9 @@ export default function HomePage() {
       alert("Failed to cancel appointment");
       return;
     }
+
+    // Cancel the notification
+    await cancelAppointmentNotification(selectedAppointment.id);
 
     alert("Appointment canceled successfully");
     onClose();

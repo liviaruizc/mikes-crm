@@ -18,6 +18,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "../calendar-fix.css";
+import { cancelAppointmentNotification } from "../lib/notificationService";
 
 
 const localizer = momentLocalizer(moment);
@@ -98,6 +99,9 @@ export default function CalendarPage() {
       alert("Failed to cancel appointment");
       return;
     }
+
+    // Cancel the notification
+    await cancelAppointmentNotification(selectedEvent.id);
 
     // Reload appointments and close dialog
     await loadAppointments();
