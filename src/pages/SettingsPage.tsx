@@ -10,6 +10,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
+import { sendTestNotification } from "../lib/notificationService";
 
 const toaster = createToaster({
   placement: "top",
@@ -151,6 +152,29 @@ export default function SettingsPage() {
         >
           Save Settings
         </Button>
+
+        {/* Test Notification Button */}
+        <Box w="full" pt={6} borderTop="1px solid" borderColor="gray.200">
+          <Text fontSize="lg" fontWeight="500" color="black" mb={2}>
+            Test Notifications
+          </Text>
+          <Text fontSize="sm" color="gray.600" mb={4}>
+            Send a test notification to verify that notifications are working on your device.
+          </Text>
+          <Button
+            bg="transparent"
+            color="#f59e0b"
+            border="1px solid"
+            borderColor="#f59e0b"
+            fontWeight="500"
+            _hover={{ bg: "#f59e0b", color: "black" }}
+            transition="colors 0.15s"
+            onClick={sendTestNotification}
+            w="full"
+          >
+            Send Test Notification
+          </Button>
+        </Box>
       </VStack>
     </Box>
   );

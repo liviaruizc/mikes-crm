@@ -93,3 +93,43 @@ export async function checkNotificationPermissions(): Promise<boolean> {
     return false;
   }
 }
+
+// Test function to send immediate notification
+export async function sendTestNotification() {
+  if (!Capacitor.isNativePlatform()) {
+    alert('Notifications only work on mobile devices');
+    return;
+  }
+
+  try {
+    // Request permissions first
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      alert('Please enable notifications in your device settings');
+      return;
+    }
+
+    // Send notification in 5 seconds
+    const notificationTime = new Date();
+    notificationTime.setSeconds(notificationTime.getSeconds() + 5);
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: Math.floor(Math.random() * 1000000),
+          title: 'Test Notification',
+          body: 'This is a test notification from Contractor\'s CRM! You should receive appointment reminders 24 hours in advance.',
+          schedule: { at: notificationTime },
+          sound: 'default',
+          smallIcon: 'ic_stat_icon_config_sample',
+          iconColor: '#f59e0b',
+        },
+      ],
+    });
+
+    alert('Test notification scheduled! You should receive it in 5 seconds.');
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    alert('Failed to send test notification');
+  }
+}
