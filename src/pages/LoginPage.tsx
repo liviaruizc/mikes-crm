@@ -258,7 +258,7 @@ export default function LoginPage() {
           <VStack gap={6} align="stretch">
           <Box textAlign="center">
             <Heading color="#f59e0b" fontWeight="600" fontSize="2xl" mb={2}>
-              Mike's CRM
+              Contractor's CRM
             </Heading>
             <Text color="gray.600" fontSize="sm">
               {isSignUp ? "Create your account" : "Sign in to your account"}

@@ -219,7 +219,7 @@ export default function HomePage() {
     const ownerMessage = `Reminder: Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}. Location: ${selectedAppointment.customers?.address || 'No address'}`;
     
     // Message to customer
-    const customerMessage = `Hi ${customerName}! This is a reminder about your appointment with Mike Renovations on ${appointmentDate} at ${appointmentTime}. See you then!`;
+    const customerMessage = `Hi ${customerName}! This is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}. See you then!`;
 
     try {
       // Get owner phone from settings
@@ -323,7 +323,7 @@ export default function HomePage() {
     <Box maxW="1400px" mx="auto">
       <VStack align="start" gap={1} mb={8}>
         <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="500" color="black">
-          Welcome to Mike&apos;s CRM
+          Welcome to Contractor&apos;s CRM
         </Text>
         <Text fontSize={{ base: "md", md: "lg" }} color="gray.600">
           Manage appointments, customers, and your entire workflow.

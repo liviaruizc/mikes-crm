@@ -246,7 +246,7 @@ async function checkAndSendReminders() {
       const ownerMessage = `Reminder: Appointment with ${customer?.full_name || 'Unknown Customer'} on ${formattedDate} at ${formattedTime}. Location: ${customer?.address || 'No address'}`;
       
       // Message to customer
-      const customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment with Mike Renovations on ${formattedDate} at ${formattedTime}. See you then!`;
+      const customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment on ${formattedDate} at ${formattedTime}. See you then!`;
 
       // Get owner phone from database
       const ownerPhone = await getOwnerPhone();
