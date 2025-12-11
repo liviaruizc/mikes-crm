@@ -1,3 +1,21 @@
+/**
+ * Express Server for Contractor's CRM
+ * 
+ * Provides backend API for:
+ * - Sending SMS reminders via Vonage API
+ * - Automated appointment reminder cron job (every 30 minutes)
+ * - CORS-restricted endpoints for security
+ * - Rate limiting to prevent abuse
+ * 
+ * Port: 3001
+ * 
+ * Security Features:
+ * - JWT authentication required for all endpoints
+ * - Rate limiting (10 requests per 15 minutes)
+ * - CORS restricted to specific origins
+ * - Request validation
+ */
+
 import express from 'express';
 import cors from 'cors';
 import twilio from 'twilio';
@@ -12,15 +30,19 @@ import rateLimit from 'express-rate-limit';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
+// Load environment variables from .env.local
 config({ path: join(__dirname, '.env.local') });
 
-// Initialize Supabase client
+// Initialize Supabase client for database access
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Helper function to get owner phone from database
+/**
+ * Get owner phone number from database settings
+ * Falls back to default if not found
+ * @returns {Promise<string>} Owner phone number
+ */
 async function getOwnerPhone() {
   try {
     const { data, error } = await supabase
