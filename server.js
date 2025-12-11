@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,13 +42,75 @@ async function getOwnerPhone() {
 
 
 const app = express();
-app.use(cors());
+
+// Configure CORS with specific origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:5173', 'http://localhost:5174'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Capacitor, native apps)
+    if (!origin) return callback(null, true);
+    
+    // Allow Capacitor apps (capacitor://, ionic://, http://localhost, etc.)
+    if (origin.startsWith('capacitor://') || 
+        origin.startsWith('ionic://') || 
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('https://localhost')) {
+      return callback(null, true);
+    }
+    
+    // Check configured allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Log all incoming requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
+});
+
+// Authentication middleware
+const authenticateRequest = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid authorization header' });
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (err) {
+    console.error('Authentication error:', err);
+    return res.status(401).json({ error: 'Unauthorized: Authentication failed' });
+  }
+};
+
+// Rate limiter for SMS endpoint (max 10 requests per 15 minutes per IP)
+const smsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: 'Too many SMS requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Helper function to format US phone numbers with +1
@@ -76,12 +139,15 @@ function formatUSPhoneNumber(phone) {
   return `+${cleaned}`;
 }
 
-app.post('/api/send-sms', async (req, res) => {
+app.post('/api/send-sms', smsLimiter, authenticateRequest, async (req, res) => {
   let { to, message } = req.body;
 
   if (!to || !message) {
     return res.status(400).json({ error: 'Missing required fields: to, message' });
   }
+  
+  // Log authenticated user making the request
+  console.log(`SMS request from user: ${req.user.email}`);
 
   // Format phone number with +1 for US
   to = formatUSPhoneNumber(to);
@@ -89,12 +155,6 @@ app.post('/api/send-sms', async (req, res) => {
   const vonageApiKey = process.env.VONAGE_API_KEY;
   const vonageApiSecret = process.env.VONAGE_API_SECRET;
   const vonageFromNumber = process.env.VONAGE_FROM_NUMBER;
-
-  console.log('Vonage environment check:', {
-    hasApiKey: !!vonageApiKey,
-    hasApiSecret: !!vonageApiSecret,
-    hasFromNumber: !!vonageFromNumber,
-  });
 
   if (!vonageApiKey || !vonageApiSecret || !vonageFromNumber) {
     console.error('Missing Vonage credentials');

@@ -1,3 +1,20 @@
+/**
+ * HomePage Component
+ * 
+ * Main dashboard that displays:
+ * - Business statistics (revenue, contacts, deals, conversion rate)
+ * - Today's appointments with map view
+ * - Customer locations on interactive map
+ * - Quick actions for appointments
+ * 
+ * Features:
+ * - Google Maps integration for location visualization
+ * - SMS reminders for appointments
+ * - Push notifications for reminders
+ * - Filter by pipeline stage
+ * - Geocoding for customer addresses
+ */
+
 import { Box, Text, SimpleGrid, Button, VStack, HStack, Spinner, Dialog, Heading, useDisclosure, Flex } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -5,11 +22,15 @@ import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import moment from "moment-timezone";
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
 import { Users, TrendingUp, Calendar, Plus } from "lucide-react";
-import { cancelAppointmentNotification } from "../lib/notificationService";
+import { cancelAppointmentNotification, sendImmediateReminderNotification } from "../lib/notificationService";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// Format phone number to (XXX) XXX-XXXX
+/**
+ * Format phone number to (XXX) XXX-XXXX format
+ * @param phone - Raw phone number string
+ * @returns Formatted phone number or "No phone" if invalid
+ */
 function formatPhoneNumber(phone: string | undefined): string {
   if (!phone) return "No phone";
   const cleaned = phone.replace(/\D/g, "");
@@ -19,6 +40,9 @@ function formatPhoneNumber(phone: string | undefined): string {
   return phone;
 }
 
+// TypeScript interfaces for type safety
+
+/** Appointment object structure */
 interface Appointment {
   id: string;
   title: string;
@@ -37,6 +61,7 @@ interface Appointment {
   lng?: number;
 }
 
+/** Customer object structure with optional geocoded coordinates */
 interface Customer {
   id: string;
   full_name: string;
@@ -49,6 +74,7 @@ interface Customer {
   estimated_price?: number;
 }
 
+/** Dashboard statistics */
 interface Stats {
   totalRevenue: number;
   activeContacts: number;
@@ -58,15 +84,17 @@ interface Stats {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { open, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure(); // Dialog state management
+  
+  // State management
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showOnlyToday, setShowOnlyToday] = useState(false);
-  const [selectedPipelineStage, setSelectedPipelineStage] = useState<string>("all");
+  const [showOnlyToday, setShowOnlyToday] = useState(false); // Filter: show today's appointments only
+  const [selectedPipelineStage, setSelectedPipelineStage] = useState<string>("all"); // Filter by pipeline stage
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [selectedMapCustomer, setSelectedMapCustomer] = useState<Customer | null>(null);
-  const [selectedMapAppointment, setSelectedMapAppointment] = useState<Appointment | null>(null);
+  const [selectedMapCustomer, setSelectedMapCustomer] = useState<Customer | null>(null); // For map marker info window
+  const [selectedMapAppointment, setSelectedMapAppointment] = useState<Appointment | null>(null); // For map marker info window
   const [stats, setStats] = useState<Stats>({
     totalRevenue: 0,
     activeContacts: 0,
@@ -74,12 +102,17 @@ export default function HomePage() {
     conversionRate: 0,
   });
 
+  // Load data on component mount
   useEffect(() => {
     loadTodayAppointments();
     loadCustomers();
     loadStats();
   }, []);
 
+  /**
+   * Load business statistics from database
+   * Calculates total revenue, active contacts, deals closed, and conversion rate
+   */
   async function loadStats() {
     const { data, error } = await supabase
       .from("customers")
@@ -100,6 +133,10 @@ export default function HomePage() {
     }
   }
 
+  /**
+   * Load customers with addresses from database
+   * Only loads customers that have valid addresses for map display
+   */
   async function loadCustomers() {
     const { data, error } = await supabase
       .from("customers")
@@ -118,6 +155,11 @@ export default function HomePage() {
     }
   }
 
+  /**
+   * Convert customer addresses to GPS coordinates using Google Maps Geocoding API
+   * @param customers - Array of customers with address field
+   * @returns Array of customers with lat/lng coordinates added
+   */
   async function geocodeCustomers(customers: any[]): Promise<Customer[]> {
     const results: Customer[] = [];
 
@@ -165,6 +207,10 @@ export default function HomePage() {
     return results;
   }
 
+  /**
+   * Load appointments for the current day
+   * Fetches appointments with customer details and geocodes addresses for map view
+   */
   async function loadTodayAppointments() {
     const startOfDay = moment().tz("America/New_York").startOf("day").toISOString();
     const endOfDay = moment().tz("America/New_York").endOf("day").toISOString();
@@ -208,6 +254,10 @@ export default function HomePage() {
     onOpen();
   }
 
+  /**
+   * Send appointment reminder via SMS and push notification
+   * Sends to both owner and customer (if customer has phone number)
+   */
   async function handleSendReminder() {
     if (!selectedAppointment) return;
 
@@ -236,6 +286,14 @@ export default function HomePage() {
       // Send SMS to owner
       await sendSMS(ownerPhone, ownerMessage);
 
+      // Send notification (for testing)
+      await sendImmediateReminderNotification(
+        customerName,
+        appointmentDate,
+        appointmentTime,
+        selectedAppointment.customers?.address
+      );
+
       // Send SMS to customer if they have a phone number
       if (customerPhone) {
         await sendSMS(customerPhone, customerMessage);
@@ -248,18 +306,41 @@ export default function HomePage() {
     }
   }
 
+  /**
+   * Send SMS message via backend API
+   * @param to - Phone number to send to
+   * @param message - SMS message content
+   */
   async function sendSMS(to: string, message: string) {
+    // Get the current user's session token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+    
     const response = await fetch('http://localhost:3001/api/send-sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ to, message }),
     });
 
     if (!response.ok) {
-      throw new Error('SMS send failed');
+      const errorData = await response.json();
+      console.error('SMS Error:', errorData);
+      throw new Error(errorData.error || 'Failed to send SMS');
     }
+    
+    return response.json();
   }
 
+  /**
+   * Cancel/delete an appointment from database
+   * Also cancels any scheduled push notifications for this appointment
+   */
   async function handleCancelAppointment() {
     if (!selectedAppointment?.id) return;
 
