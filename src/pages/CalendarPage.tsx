@@ -151,7 +151,7 @@ export default function CalendarPage() {
         .eq('user_id', userId)
         .single();
       
-      const ownerPhone = settings?.owner_phone || "+19417633317";
+      const ownerPhone = settings?.owner_phone || "19417633317";
       
       // Send SMS to owner
       await sendSMS(ownerPhone, ownerMessage);
@@ -172,7 +172,7 @@ export default function CalendarPage() {
       alert("Reminder sent successfully!");
     } catch (error) {
       console.error("Failed to send reminder:", error);
-      alert("Failed to send reminder. Please check your Twilio configuration.");
+      alert("Failed to send reminder. Please check your Vonage configuration.");
     }
   }
 

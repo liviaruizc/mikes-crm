@@ -51,8 +51,8 @@ async function getOwnerPhone() {
       .single();
     
     if (error || !data?.owner_phone) {
-      console.log('⚠️ No owner phone in database, using default: 9417633317');
-      return '9417633317';
+      console.log('⚠️ No owner phone in database, using default: 19417633317');
+      return '19417633317';
     }
     
     return data.owner_phone;
