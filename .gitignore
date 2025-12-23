@@ -10,7 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+.env.local
 
 # Editor directories and files
 .vscode/*
@@ -22,9 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env.local
+
 
 # Capacitor
 ios/App/Pods
 ios/App/App/public
 ios/App/App/capacitor.config.json
+
