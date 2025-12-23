@@ -151,7 +151,7 @@ export default function CalendarPage() {
         .eq('user_id', userId)
         .single();
       
-      const ownerPhone = settings?.owner_phone || "+19417633317";
+      const ownerPhone = settings?.owner_phone || "19417633317";
       
       // Send SMS to owner
       await sendSMS(ownerPhone, ownerMessage);
@@ -172,7 +172,7 @@ export default function CalendarPage() {
       alert("Reminder sent successfully!");
     } catch (error) {
       console.error("Failed to send reminder:", error);
-      alert("Failed to send reminder. Please check your Twilio configuration.");
+      alert("Failed to send reminder. Please check your Vonage configuration.");
     }
   }
 
@@ -184,8 +184,9 @@ export default function CalendarPage() {
       throw new Error('Not authenticated');
     }
     
-    // Call local Express API endpoint
-    const response = await fetch('http://localhost:3001/api/send-sms', {
+    // Use environment variable for API URL (falls back to localhost for development)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl}/api/send-sms`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
