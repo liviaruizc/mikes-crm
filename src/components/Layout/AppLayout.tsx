@@ -15,6 +15,7 @@ export default function AppLayout() {
     { to: '/', label: 'Home' },
     { to: '/appointments/new', label: 'New Appointment' },
     { to: '/calendar', label: 'Calendar' },
+    { to: '/notifications', label: 'Notifications' },
     { to: '/customers', label: 'Customers' },
     { to: '/deals', label: 'Deals' },
     { to: '/pipeline', label: 'Pipeline' },

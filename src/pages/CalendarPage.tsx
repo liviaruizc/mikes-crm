@@ -1,3 +1,17 @@
+/**
+ * CalendarPage Component
+ * 
+ * Full calendar view of all appointments using react-big-calendar
+ * 
+ * Features:
+ * - Month/week/day/agenda views
+ * - View appointment details by clicking on events
+ * - Cancel appointments
+ * - Send SMS and push notification reminders
+ * - Navigate to create new appointments
+ * - Real-time data from Supabase
+ */
+
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -18,25 +32,31 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "../calendar-fix.css";
-import { cancelAppointmentNotification } from "../lib/notificationService";
+import { cancelAppointmentNotification, sendImmediateReminderNotification } from "../lib/notificationService";
 
-
+// Initialize moment localizer for calendar date/time formatting
 const localizer = momentLocalizer(moment);
 
 export default function CalendarPage() {
   const navigate = useNavigate();
-  const { open, onOpen, onClose } = useDisclosure();
-
-  const [events, setEvents] = useState<any[]>([]);
+  const { open, onOpen, onClose } = useDisclosure(); // Dialog state for appointment details
+  
+  // State management
+  const [events, setEvents] = useState<any[]>([]); // Calendar events
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null); // Currently selected appointment
+  const [currentDate, setCurrentDate] = useState(new Date()); // Calendar navigation date
+  const [currentView, setCurrentView] = useState<View>(Views.MONTH); // Calendar view mode
 
+  // Load appointments on component mount
   useEffect(() => {
     loadAppointments();
   }, []);
 
+  /**
+   * Load all appointments from database and format for calendar display
+   * Transforms database appointments into calendar event format
+   */
   async function loadAppointments() {
     setLoading(true);
 
@@ -136,6 +156,14 @@ export default function CalendarPage() {
       // Send SMS to owner
       await sendSMS(ownerPhone, ownerMessage);
 
+      // Send notification (for testing)
+      await sendImmediateReminderNotification(
+        customerName,
+        appointmentDate,
+        appointmentTime,
+        selectedEvent.customer?.address
+      );
+
       // Temporarily disabled - only send to owner for testing
       // if (customerPhone) {
       //   await sendSMS(customerPhone, customerMessage);
@@ -149,10 +177,20 @@ export default function CalendarPage() {
   }
 
   async function sendSMS(to: string, message: string) {
+    // Get the current user's session token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+    
     // Call local Express API endpoint
     const response = await fetch('http://localhost:3001/api/send-sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ to, message }),
     });
 

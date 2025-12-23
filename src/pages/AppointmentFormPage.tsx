@@ -1,3 +1,18 @@
+/**
+ * AppointmentFormPage Component
+ * 
+ * Create new appointments with customer selection and scheduling
+ * 
+ * Features:
+ * - Select existing customer or create new one inline
+ * - Set appointment date, time, and duration
+ * - Add appointment title and description
+ * - Automatically schedules push notification 24 hours before appointment
+ * - Time conflict detection
+ * - Form validation
+ * - Pre-fill with URL parameters (customerId, date, time)
+ */
+
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -25,18 +40,22 @@ const toaster = createToaster({
 
 export default function AppointmentFormPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { open, onOpen, onClose } = useDisclosure();
-
+  const [searchParams] = useSearchParams(); // URL parameters for pre-filling form
+  const { open, onOpen, onClose } = useDisclosure(); // Customer creation modal
+  
+  // State management
   const [customers, setCustomers] = useState<any[]>([]);
-  const [existingAppointments, setExistingAppointments] = useState<any[]>([]);
+  const [existingAppointments, setExistingAppointments] = useState<any[]>([]); // For time conflict checking
   const [loading, setLoading] = useState(false);
+  
+  // Form validation errors
   const [errors, setErrors] = useState({
     customer_id: false,
     date: false,
     time: false,
   });
 
+  // Form data
   const [form, setForm] = useState({
     customer_id: "",
     customer_name: "",
@@ -261,7 +280,8 @@ export default function AppointmentFormPage() {
           data.id,
           selectedCustomer.full_name,
           new Date(form.start_time),
-          form.title || "Appointment"
+          form.title || "Appointment",
+          selectedCustomer.address || undefined
         );
       }
 
