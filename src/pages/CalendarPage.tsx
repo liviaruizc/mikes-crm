@@ -184,8 +184,9 @@ export default function CalendarPage() {
       throw new Error('Not authenticated');
     }
     
-    // Call local Express API endpoint
-    const response = await fetch('http://localhost:3001/api/send-sms', {
+    // Use environment variable for API URL (falls back to localhost for development)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl}/api/send-sms`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
