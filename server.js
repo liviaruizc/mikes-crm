@@ -64,31 +64,9 @@ async function getOwnerPhone() {
 
 const app = express();
 
-// Configure CORS with specific origins
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:5173', 'http://localhost:5174'];
-
+// Configure CORS - Allow all origins
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Capacitor, native apps)
-    if (!origin) return callback(null, true);
-    
-    // Allow Capacitor apps (capacitor://, ionic://, http://localhost, etc.)
-    if (origin.startsWith('capacitor://') || 
-        origin.startsWith('ionic://') || 
-        origin.startsWith('http://localhost') ||
-        origin.startsWith('https://localhost')) {
-      return callback(null, true);
-    }
-    
-    // Check configured allowed origins
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins
   credentials: true
 }));
 
