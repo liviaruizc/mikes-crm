@@ -182,12 +182,15 @@ export default function AppLayout() {
         alignItems="center"
         p={2}
         zIndex={10}
+        overflowX="auto"
       >
         {[
           { to: '/', label: 'Home', icon: '🏠' },
           { to: '/calendar', label: 'Calendar', icon: '📅' },
           { to: '/customers', label: 'Customers', icon: '👥' },
+          { to: '/deals', label: 'Deals', icon: '💼' },
           { to: '/map', label: 'Map', icon: '🗺️' },
+          { to: '/settings', label: 'Settings', icon: '⚙️' },
         ].map((link) => (
           <NavLink
             key={link.to}
@@ -196,16 +199,17 @@ export default function AppLayout() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              padding: "8px 12px",
+              padding: "8px 8px",
               borderRadius: "8px",
               backgroundColor: isActive ? "#f59e0b" : "transparent",
               color: isActive ? "#000000" : "#FFFFFF",
               textDecoration: "none",
-              fontSize: "12px",
-              minWidth: "70px",
+              fontSize: "11px",
+              minWidth: "60px",
+              flexShrink: 0,
             })}
           >
-            <span style={{ fontSize: "20px", marginBottom: "4px" }}>{link.icon}</span>
+            <span style={{ fontSize: "18px", marginBottom: "2px" }}>{link.icon}</span>
             {link.label}
           </NavLink>
         ))}
