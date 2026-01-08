@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [signupEmail, setSignupEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -182,6 +183,41 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotPassword() {
+    // Validate email format
+    if (!validateEmail(email)) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toaster.create({
+        title: "Success",
+        description: "Password reset link sent! Check your email.",
+        type: "success",
+      });
+
+      setShowForgotPassword(false);
+      setEmail("");
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      toaster.create({
+        title: "Error",
+        description: error.message || "Failed to send reset email.",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isSignUp) {
@@ -256,6 +292,82 @@ export default function LoginPage() {
           </VStack>
         ) : (
           <VStack gap={6} align="stretch">
+          {showForgotPassword ? (
+            // FORGOT PASSWORD VIEW
+            <>
+              <Box textAlign="center">
+                <Heading color="#f59e0b" fontWeight="600" fontSize="2xl" mb={2}>
+                  Reset Password
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Enter your email to receive a password reset link
+                </Text>
+              </Box>
+
+              <Field.Root required invalid={!!emailError}>
+                <Field.Label fontWeight="500" color="black">
+                  Email
+                </Field.Label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailError("");
+                  }}
+                  placeholder="your@email.com"
+                  bg="white"
+                  border="1px solid"
+                  borderColor={emailError ? "red.500" : "gray.300"}
+                  color="black"
+                  _focus={{
+                    borderColor: emailError ? "red.500" : "#f59e0b",
+                    boxShadow: emailError ? "0 0 0 1px red" : "0 0 0 1px #f59e0b",
+                  }}
+                />
+                {emailError && (
+                  <Field.ErrorText color="red.500" fontSize="sm" mt={1}>
+                    {emailError}
+                  </Field.ErrorText>
+                )}
+              </Field.Root>
+
+              <Button
+                onClick={handleForgotPassword}
+                bg="#f59e0b"
+                color="black"
+                fontWeight="500"
+                _hover={{ bg: "#d97706" }}
+                transition="colors 0.15s"
+                loading={loading}
+                w="full"
+              >
+                Send Reset Link
+              </Button>
+
+              <Box textAlign="center">
+                <Text color="gray.600" fontSize="sm">
+                  Remember your password?{" "}
+                  <Text
+                    as="span"
+                    color="#f59e0b"
+                    fontWeight="500"
+                    cursor="pointer"
+                    _hover={{ textDecoration: "underline" }}
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setEmail("");
+                      setEmailError("");
+                    }}
+                  >
+                    Sign In
+                  </Text>
+                </Text>
+              </Box>
+            </>
+          ) : (
+            // LOGIN/SIGNUP VIEW
+            <>
           <Box textAlign="center">
             <Heading color="#f59e0b" fontWeight="600" fontSize="2xl" mb={2}>
               Contractor's CRM
@@ -344,6 +456,21 @@ export default function LoginPage() {
             </VStack>
           </form>
 
+          {!isSignUp && (
+            <Box textAlign="center" mt={-2}>
+              <Text
+                color="#f59e0b"
+                fontSize="sm"
+                fontWeight="500"
+                cursor="pointer"
+                _hover={{ textDecoration: "underline" }}
+                onClick={() => setShowForgotPassword(true)}
+              >
+                Forgot password?
+              </Text>
+            </Box>
+          )}
+
           <Box textAlign="center">
             <Text color="gray.600" fontSize="sm">
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
@@ -359,6 +486,8 @@ export default function LoginPage() {
               </Text>
             </Text>
           </Box>
+          </>
+          )}
         </VStack>
         )}
       </Box>

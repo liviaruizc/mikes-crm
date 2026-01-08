@@ -14,6 +14,7 @@ import MapPage from "./pages/MapPage";
 import DealsPage from "./pages/DealsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { initializeNotificationListener } from "./lib/notificationService";
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         element={
           <ProtectedRoute>
