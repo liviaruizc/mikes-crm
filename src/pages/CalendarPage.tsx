@@ -22,7 +22,6 @@ import {
   Dialog,
   Text,
   VStack,
-  HStack,
   useDisclosure,
   Link,
 } from "@chakra-ui/react";
