@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, Heading, Text, Button, Stack, Card, Spinner } from "@chakra-ui/react";
 import { supabase } from "../lib/supabaseClient";
+import { downloadAppointmentICS } from "../lib/calendarExport";
 
 /** Appointment with customer details */
 interface Appointment {
@@ -218,8 +219,27 @@ export default function AppointmentDetailsPage() {
         <Button
           colorScheme="orange"
           size="lg"
-          onClick={() => navigate("/calendar")}
+          onClick={() => {
+            downloadAppointmentICS({
+              id: appointment.id,
+              title: appointment.title,
+              description: appointment.description,
+              startTime: new Date(appointment.start_time),
+              endTime: new Date(appointment.end_time),
+              location: appointment.customers.address,
+              customerName: appointment.customers.full_name
+            });
+          }}
           mt={4}
+        >
+          📅 Add to Calendar
+        </Button>
+
+        <Button
+          variant="outline"
+          colorScheme="orange"
+          size="lg"
+          onClick={() => navigate("/calendar")}
         >
           Back to Calendar
         </Button>

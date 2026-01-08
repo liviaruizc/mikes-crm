@@ -33,6 +33,7 @@ import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "../calendar-fix.css";
 import { cancelAppointmentNotification, sendImmediateReminderNotification } from "../lib/notificationService";
+import { downloadAppointmentICS } from "../lib/calendarExport";
 
 // Initialize moment localizer for calendar date/time formatting
 const localizer = momentLocalizer(moment);
@@ -134,13 +135,21 @@ export default function CalendarPage() {
     const appointmentDate = moment(selectedEvent.start).tz("America/New_York").format("MMMM D, YYYY");
     const appointmentTime = moment(selectedEvent.start).tz("America/New_York").format("h:mm A");
     const customerName = selectedEvent.customer?.full_name || "Customer";
+    const customerAddress = selectedEvent.customer?.address;
     //const customerPhone = selectedEvent.customer?.phone;
 
-    // Message to yourself
-    const ownerMessage = `Reminder: Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}`;
+    // Message to yourself - include address
+    let ownerMessage = `Reminder: Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}`;
+    if (customerAddress) {
+      ownerMessage += `. Location: ${customerAddress}`;
+    }
     
-    // Message to customer
-    //const customerMessage = `Hi ${customerName}, this is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}. See you then!`;
+    // Message to customer - include address
+    let customerMessage = `Hi ${customerName}, this is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}.`;
+    if (customerAddress) {
+      customerMessage += ` Location: ${customerAddress}`;
+    }
+    customerMessage += ' See you then!';
 
     try {
       // Get owner phone from settings
@@ -427,7 +436,31 @@ export default function CalendarPage() {
                 >
                   Close
                 </Button>
-                <Flex gap={2}>
+                <Flex gap={2} flexWrap="wrap">
+                  <Button 
+                    variant="outline"
+                    border="1px solid"
+                    borderColor="#f59e0b"
+                    color="#f59e0b"
+                    fontWeight="500"
+                    _hover={{ bg: "#fef3c7" }}
+                    transition="colors 0.15s"
+                    onClick={() => {
+                      if (selectedEvent) {
+                        downloadAppointmentICS({
+                          id: selectedEvent.id,
+                          title: selectedEvent.title || selectedEvent.customer?.full_name || 'Appointment',
+                          description: selectedEvent.description,
+                          startTime: new Date(selectedEvent.start),
+                          endTime: new Date(selectedEvent.end),
+                          location: selectedEvent.customer?.address,
+                          customerName: selectedEvent.customer?.full_name
+                        });
+                      }
+                    }}
+                  >
+                    📅 Add to Calendar
+                  </Button>
                   <Button 
                     bg="#f59e0b"
                     color="black"

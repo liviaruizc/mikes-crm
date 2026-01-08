@@ -96,7 +96,7 @@ export async function scheduleAppointmentNotification(
       return;
     }
 
-    // Build notification body with location if available
+    // Build notification body - always include location if available
     let notificationBody = `${customerName} - ${appointmentTitle || 'Appointment'} tomorrow at ${appointmentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
     if (location) {
       notificationBody += `\n📍 ${location}`;
@@ -234,7 +234,7 @@ export async function sendImmediateReminderNotification(
     const notificationTime = new Date();
     notificationTime.setSeconds(notificationTime.getSeconds() + 3);
 
-    // Build notification body
+    // Build notification body - always include location if available
     let notificationBody = `Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}`;
     if (location) {
       notificationBody += `\n📍 ${location}`;

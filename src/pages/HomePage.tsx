@@ -23,6 +23,7 @@ import moment from "moment-timezone";
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
 import { Users, TrendingUp, Calendar, Plus } from "lucide-react";
 import { cancelAppointmentNotification, sendImmediateReminderNotification } from "../lib/notificationService";
+import { downloadAppointmentICS } from "../lib/calendarExport";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -269,8 +270,12 @@ export default function HomePage() {
     // Message to owner
     const ownerMessage = `Reminder: Appointment with ${customerName} on ${appointmentDate} at ${appointmentTime}. Location: ${selectedAppointment.customers?.address || 'No address'}`;
     
-    // Message to customer
-    const customerMessage = `Hi ${customerName}! This is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}. See you then!`;
+    // Message to customer - include address
+    let customerMessage = `Hi ${customerName}! This is a reminder about your appointment on ${appointmentDate} at ${appointmentTime}.`;
+    if (selectedAppointment.customers?.address) {
+      customerMessage += ` Location: ${selectedAppointment.customers.address}`;
+    }
+    customerMessage += ' See you then!';
 
     try {
       // Get owner phone from settings
@@ -1006,7 +1011,28 @@ export default function HomePage() {
                 >
                   Close
                 </Button>
-                <Flex gap={2}>
+                <Flex gap={2} flexWrap="wrap">
+                  <Button 
+                    variant="ghost"
+                    color="orange.600"
+                    size="sm"
+                    _hover={{ bg: "orange.50" }}
+                    onClick={() => {
+                      if (selectedAppointment) {
+                        downloadAppointmentICS({
+                          id: selectedAppointment.id,
+                          title: selectedAppointment.title || selectedAppointment.customers?.full_name || 'Appointment',
+                          description: selectedAppointment.description,
+                          startTime: new Date(selectedAppointment.start_time),
+                          endTime: new Date(selectedAppointment.end_time),
+                          location: selectedAppointment.customers?.address,
+                          customerName: selectedAppointment.customers?.full_name
+                        });
+                      }
+                    }}
+                  >
+                    📅 Add to Calendar
+                  </Button>
                   <Button 
                     variant="ghost"
                     color="blue.600"

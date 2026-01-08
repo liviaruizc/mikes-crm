@@ -304,8 +304,12 @@ async function checkAndSendReminders() {
       // Message to owner (you)
       const ownerMessage = `Reminder: Appointment with ${customer?.full_name || 'Unknown Customer'} on ${formattedDate} at ${formattedTime}. Location: ${customer?.address || 'No address'}`;
       
-      // Message to customer
-      const customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment on ${formattedDate} at ${formattedTime}. See you then!`;
+      // Message to customer (include address)
+      let customerMessage = `Hi ${customer?.full_name || 'there'}! This is a reminder about your appointment on ${formattedDate} at ${formattedTime}.`;
+      if (customer?.address) {
+        customerMessage += ` Location: ${customer.address}`;
+      }
+      customerMessage += ' See you then!';
 
       // Get owner phone from database
       const ownerPhone = await getOwnerPhone();
