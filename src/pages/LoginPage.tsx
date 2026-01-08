@@ -29,6 +29,8 @@ export default function LoginPage() {
   const [signupEmail, setSignupEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   function validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,6 +81,16 @@ export default function LoginPage() {
   }
 
   async function handleLogin() {
+    // Check if locked out
+    if (isLocked) {
+      toaster.create({
+        title: "Account Locked",
+        description: "Too many failed attempts. Please try again in 15 minutes or use 'Forgot Password'.",
+        type: "error",
+      });
+      return;
+    }
+
     // Validate email format
     if (!validateEmail(email)) {
       return;
@@ -99,6 +111,10 @@ export default function LoginPage() {
 
       if (error) throw error;
 
+      // Reset attempts on successful login
+      setLoginAttempts(0);
+      setIsLocked(false);
+
       toaster.create({
         title: "Success",
         description: "Logged in successfully!",
@@ -108,11 +124,33 @@ export default function LoginPage() {
       navigate("/");
     } catch (error: any) {
       console.error("Login error:", error);
-      toaster.create({
-        title: "Error",
-        description: error.message || "Failed to log in.",
-        type: "error",
-      });
+      
+      // Increment failed attempts
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+
+      // Lock after 5 attempts
+      if (newAttempts >= 5) {
+        setIsLocked(true);
+        toaster.create({
+          title: "Account Locked",
+          description: "Too many failed login attempts. Please wait 15 minutes or use 'Forgot Password'.",
+          type: "error",
+          duration: 5000,
+        });
+        
+        // Auto-unlock after 15 minutes
+        setTimeout(() => {
+          setIsLocked(false);
+          setLoginAttempts(0);
+        }, 15 * 60 * 1000);
+      } else {
+        toaster.create({
+          title: "Error",
+          description: `${error.message || "Failed to log in."}${newAttempts < 5 ? ` (Attempt ${newAttempts}/5)` : ''}`,
+          type: "error",
+        });
+      }
     } finally {
       setLoading(false);
     }

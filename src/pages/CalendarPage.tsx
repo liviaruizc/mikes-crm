@@ -232,26 +232,6 @@ export default function CalendarPage() {
         </Button>
       </Flex>
 
-      {/* CUSTOM VIEW SWITCHER */}
-      <HStack gap={3} mb={4}>
-        {["month", "week", "day"].map((v) => (
-          <Button
-            key={v}
-            onClick={() => setCurrentView(v as View)}
-            bg={currentView === v ? "#f59e0b" : "white"}
-            color={currentView === v ? "black" : "gray.600"}
-            border="1px solid"
-            borderColor={currentView === v ? "transparent" : "gray.300"}
-            fontWeight="500"
-            _hover={{ bg: currentView === v ? "#d97706" : "gray.100" }}
-            transition="colors 0.15s"
-            size="sm"
-          >
-            {v.toUpperCase()}
-          </Button>
-        ))}
-      </HStack>
-
       {/* CALENDAR */}
       {loading ? (
         <Flex justify="center" mt={10}>
