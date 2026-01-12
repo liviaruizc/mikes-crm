@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [signupEmail, setSignupEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [authError, setAuthError] = useState("");
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -114,6 +115,7 @@ export default function LoginPage() {
       // Reset attempts on successful login
       setLoginAttempts(0);
       setIsLocked(false);
+      setAuthError("");
 
       toaster.create({
         title: "Success",
@@ -124,7 +126,9 @@ export default function LoginPage() {
       navigate("/");
     } catch (error: any) {
       console.error("Login error:", error);
-      
+      // Show a friendly inline message for wrong credentials
+      const message = error?.message || "Incorrect email or password.";
+      setAuthError(message);
       // Increment failed attempts
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
@@ -147,7 +151,7 @@ export default function LoginPage() {
       } else {
         toaster.create({
           title: "Error",
-          description: `${error.message || "Failed to log in."}${newAttempts < 5 ? ` (Attempt ${newAttempts}/5)` : ''}`,
+          description: `${message}${newAttempts < 5 ? ` (Attempt ${newAttempts}/5)` : ''}`,
           type: "error",
         });
       }
@@ -352,6 +356,7 @@ export default function LoginPage() {
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setEmailError("");
+                    setAuthError("");
                   }}
                   placeholder="your@email.com"
                   bg="white"
@@ -413,6 +418,11 @@ export default function LoginPage() {
             <Text color="gray.600" fontSize="sm">
               {isSignUp ? "Create your account" : "Sign in to your account"}
             </Text>
+            {authError && (
+              <Text color="red.500" fontSize="sm" mt={3}>
+                {authError}
+              </Text>
+            )}
           </Box>
 
           <form onSubmit={handleSubmit}>
@@ -427,6 +437,7 @@ export default function LoginPage() {
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setEmailError("");
+                    setAuthError("");
                   }}
                   placeholder="your@email.com"
                   bg="white"
@@ -455,6 +466,7 @@ export default function LoginPage() {
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setPasswordError("");
+                    setAuthError("");
                   }}
                   placeholder="••••••••"
                   bg="white"
