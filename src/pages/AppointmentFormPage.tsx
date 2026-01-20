@@ -24,8 +24,7 @@ import {
   Button,
   createToaster,
   useDisclosure,
-  Flex,
-  Popover
+  Flex
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
