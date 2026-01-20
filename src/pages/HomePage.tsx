@@ -806,9 +806,20 @@ export default function HomePage() {
                       {selectedMapAppointment.customers?.address && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
                           📍 <a 
-                            href={`https://maps.google.com/?q=${encodeURIComponent(selectedMapAppointment.customers.address)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const address = encodeURIComponent(selectedMapAppointment.customers!.address!);
+                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                              
+                              if (isMobile) {
+                                // Mobile: use geo: scheme to open default maps app
+                                window.location.href = `geo:0,0?q=${address}`;
+                              } else {
+                                // Desktop: open Google Maps in new tab
+                                window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+                              }
+                            }}
                             style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                           >
                             {selectedMapAppointment.customers.address}
@@ -850,9 +861,20 @@ export default function HomePage() {
                       {selectedMapCustomer.address && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
                           📍 <a 
-                            href={`https://maps.google.com/?q=${encodeURIComponent(selectedMapCustomer.address)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const address = encodeURIComponent(selectedMapCustomer.address);
+                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                              
+                              if (isMobile) {
+                                // Mobile: use geo: scheme to open default maps app
+                                window.location.href = `geo:0,0?q=${address}`;
+                              } else {
+                                // Desktop: open Google Maps in new tab
+                                window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+                              }
+                            }}
                             style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                           >
                             {selectedMapCustomer.address}

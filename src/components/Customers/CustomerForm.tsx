@@ -7,6 +7,7 @@ import {
   VStack,
   NativeSelectRoot,
   NativeSelectField,
+  Box,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { supabase, getCurrentUserId } from "../../lib/supabaseClient";
@@ -311,16 +312,29 @@ export default function CustomerForm({
 
               <Field.Root>
                 <Field.Label fontWeight="500" color="black">Job Type</Field.Label>
-                <Input
+                <Box
+                  as="select"
                   bg="white"
                   border="1px solid"
                   borderColor="gray.300"
                   color="black"
+                  borderRadius="md"
+                  padding="8px"
+                  fontSize="md"
+                  w="full"
                   _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
-                  placeholder="e.g., Painting, Roofing, Remodeling"
                   value={form.job_type}
-                  onChange={(e) => updateField("job_type", e.target.value)}
-                />
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField("job_type", e.target.value)}
+                >
+                  <option value="">Select job type...</option>
+                  <option value="Kitchen">Kitchen</option>
+                  <option value="Bathroom">Bathroom</option>
+                  <option value="Full Remodel">Full Remodel</option>
+                  <option value="Painting">Painting</option>
+                  <option value="Flooring">Flooring</option>
+                  <option value="TV Wall">TV Wall</option>
+                  <option value="Misc">Misc</option>
+                </Box>
               </Field.Root>
 
               <Field.Root>

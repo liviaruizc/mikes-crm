@@ -2,6 +2,31 @@
 // This is a serverless function that can be deployed to Vercel, Netlify, etc.
 
 const twilio = require('twilio');
+const Joi = require('joi');
+const { parsePhoneNumber } = require('libphonenumber-js');
+
+// Validate SMS request
+const smsSchema = Joi.object({
+  to: Joi.string()
+    .required()
+    .custom((value, helpers) => {
+      try {
+        const parsed = parsePhoneNumber(value, 'US');
+        if (!parsed || !parsed.isValid()) {
+          return helpers.error('Invalid phone number');
+        }
+      } catch (err) {
+        return helpers.error('Invalid phone number format');
+      }
+      return value;
+    }),
+  message: Joi.string()
+    .max(160) // SMS limit
+    .required()
+    .messages({
+      'string.max': 'Message cannot exceed 160 characters',
+    }),
+});
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -9,11 +34,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { to, message } = req.body;
-
-  if (!to || !message) {
-    return res.status(400).json({ error: 'Missing required fields: to, message' });
+  // Validate input
+  const { error, value } = smsSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ 
+      error: error.details[0].message 
+    });
   }
+
+  const { to, message } = value;
 
   // Get Twilio credentials from environment variables
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

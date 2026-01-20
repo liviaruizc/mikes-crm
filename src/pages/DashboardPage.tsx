@@ -9,24 +9,11 @@ import {
   Badge,
   Spinner,
   Flex,
-  NativeSelectRoot,
-  NativeSelectField,
   createToaster,
   Dialog,
   Button,
 } from "@chakra-ui/react";
 import { supabase } from "../lib/supabaseClient";
-import {
-  DndContext,
-  DragOverlay,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  closestCorners,
-  useDroppable,
-  useDraggable,
-} from "@dnd-kit/core";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
 const toaster = createToaster({
   placement: "top",
@@ -71,15 +58,9 @@ type PipelineItem = {
 export default function DashboardPage() {
   const [items, setItems] = useState<PipelineItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<PipelineItem | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
-  );
 
   useEffect(() => {
     loadPipelineData();
@@ -88,9 +69,7 @@ export default function DashboardPage() {
   async function loadPipelineData() {
     setLoading(true);
 
-    console.log('Loading pipeline data...');
-
-    const { data: appointmentsData, error: apptError } = await supabase
+    const { data: appointmentsData } = await supabase
       .from("appointments")
       .select(
         `
@@ -112,9 +91,7 @@ export default function DashboardPage() {
       )
       .order("start_time");
 
-    console.log('Appointments data:', appointmentsData, 'Error:', apptError);
-
-    const { data: customersData, error: custError } = await supabase
+    const { data: customersData } = await supabase
       .from("customers")
       .select(
         `
@@ -132,8 +109,6 @@ export default function DashboardPage() {
       )
       .order("created_at", { ascending: false });
 
-    console.log('Customers data:', customersData, 'Error:', custError);
-
     const customerAppointmentMap = new Map<string, any>();
     (appointmentsData || []).forEach((appt) => {
       if (!customerAppointmentMap.has(appt.customer_id)) {
@@ -141,34 +116,39 @@ export default function DashboardPage() {
       }
     });
 
-    const customerItems: PipelineItem[] = (customersData || []).map((customer) => {
-      const appointment = customerAppointmentMap.get(customer.id);
+    const customerItems: PipelineItem[] = (customersData || []).map(
+      (customer) => {
+        const appointment = customerAppointmentMap.get(customer.id);
 
-      return {
-        id: `cust-${customer.id}`,
-        type: "customer",
-        pipeline_stage: customer.pipeline_stage,
-        title: customer.full_name || "Unnamed customer",
-        customerName: customer.full_name,
-        phone: customer.phone,
-        email: customer.email,
-        address: (customer as any).address,
-        notes: (customer as any).notes,
-        job_type: customer.job_type,
-        estimated_price: customer.estimated_price,
-        date: appointment ? appointment.start_time : customer.created_at,
-        appointmentId: appointment?.id || null,
-        appointmentTitle: appointment?.title || null,
-        appointmentDescription: appointment?.description || null,
-      };
-    });
+        return {
+          id: `cust-${customer.id}`,
+          type: "customer",
+          pipeline_stage: customer.pipeline_stage,
+          title: customer.full_name || "Unnamed customer",
+          customerName: customer.full_name,
+          phone: customer.phone,
+          email: customer.email,
+          address: (customer as any).address,
+          notes: (customer as any).notes,
+          job_type: customer.job_type,
+          estimated_price: customer.estimated_price,
+          date: appointment ? appointment.start_time : customer.created_at,
+          appointmentId: appointment?.id || null,
+          appointmentTitle: appointment?.title || null,
+          appointmentDescription: appointment?.description || null,
+        };
+      }
+    );
 
-    console.log('Customer items:', customerItems);
     setItems(customerItems);
     setLoading(false);
   }
 
-  async function updateStage(id: string, type: "appointment" | "customer", newStage: PipelineStage) {
+  async function updateStage(
+    id: string,
+    type: "appointment" | "customer",
+    newStage: PipelineStage
+  ) {
     const previous = [...items];
 
     setItems((current) =>
@@ -177,10 +157,15 @@ export default function DashboardPage() {
       )
     );
 
+    setSelectedCardId(null);
+
     const dbId = id.replace(/^(appt-|cust-)/, "");
     const table = type === "appointment" ? "appointments" : "customers";
 
-    const { error } = await supabase.from(table).update({ pipeline_stage: newStage }).eq("id", dbId);
+    const { error } = await supabase
+      .from(table)
+      .update({ pipeline_stage: newStage })
+      .eq("id", dbId);
 
     if (error) {
       setItems(previous);
@@ -229,105 +214,129 @@ export default function DashboardPage() {
     return items.filter((item) => item.pipeline_stage === stage);
   }
 
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id as string);
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over) return;
-
-    const itemId = active.id as string;
-    const newStage = over.id as PipelineStage;
-
-    const item = items.find((i) => i.id === itemId);
-    if (!item) return;
-
-    if (item.pipeline_stage !== newStage) {
-      updateStage(itemId, item.type, newStage);
+  function handleCardClick(item: PipelineItem) {
+    if (selectedCardId === item.id) {
+      setSelectedCardId(null);
+    } else {
+      setSelectedCardId(item.id);
     }
   }
 
-  const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
+  function handleStageClick(targetStage: PipelineStage) {
+    if (!selectedCardId) return;
+
+    const card = items.find((item) => item.id === selectedCardId);
+    if (!card) return;
+
+    if (card.pipeline_stage === targetStage) {
+      setSelectedCardId(null);
+      return;
+    }
+
+    updateStage(selectedCardId, card.type, targetStage);
+  }
 
   if (loading) {
     return (
-      <Flex minH="60vh" align="center" justify="center">
-        <Spinner color="gold.300" size="xl" />
+      <Flex justify="center" align="center" h="calc(100vh - 200px)">
+        <Spinner size="xl" color="gold.300" />
       </Flex>
     );
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <Box>
-        <Heading mb={2} color="gold.300" letterSpacing="wide">
-          Pipeline
-        </Heading>
+    <Box>
+      <Heading mb={2} color="gold.300" letterSpacing="wide">
+        Pipeline
+      </Heading>
 
-        <Text color="gray.400" mb={8}>
-          Track leads and appointments as they move through your sales process.
-        </Text>
+      <Text color="gray.400" mb={8}>
+        Click a card to select it, then click a stage column to move it.
+      </Text>
 
-        <SimpleGrid columns={{ base: 1, md: 3, lg: 6 }} gap={4}>
-          {STAGES.map((stage) => (
-            <PipelineColumn
-              key={stage}
-              title={stage}
-              stage={stage}
-              items={getItemsByStage(stage)}
-              onChangeStage={updateStage}
-              onItemClick={setSelectedItem}
-            />
-          ))}
-        </SimpleGrid>
-      </Box>
+      <SimpleGrid columns={{ base: 1, md: 3, lg: 6 }} gap={4}>
+        {STAGES.map((stage) => (
+          <PipelineColumn
+            key={stage}
+            title={stage}
+            stage={stage}
+            items={getItemsByStage(stage)}
+            onCardClick={handleCardClick}
+            onStageClick={handleStageClick}
+            selectedCardId={selectedCardId}
+            hasSelectedCard={!!selectedCardId}
+          />
+        ))}
+      </SimpleGrid>
 
-      <DragOverlay>
-        {activeItem ? (
-          <Box
-            bg="#0D0D0D"
-            border="2px solid #D4AF37"
-            rounded="md"
-            p={3}
-            opacity={0.9}
-            minW="200px"
-            shadow="lg"
-          >
-            <Text fontWeight="semibold">{activeItem.title}</Text>
-          </Box>
-        ) : null}
-      </DragOverlay>
-
-      <Dialog.Root open={!!selectedItem} onOpenChange={(e) => !e.open && setSelectedItem(null)} size="lg">
+      <Dialog.Root
+        open={!!selectedItem}
+        onOpenChange={(e) => !e.open && setSelectedItem(null)}
+      >
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="gray.900" border="1px solid #333">
+          <Dialog.Content bg="gray.900" color="white" maxW="lg">
             <Dialog.Header>
-              <Heading size="md" color="gold.300">
-                {selectedItem?.title}
-              </Heading>
+              <Dialog.Title>{selectedItem?.title}</Dialog.Title>
             </Dialog.Header>
-            <Dialog.CloseTrigger />
 
             <Dialog.Body>
               <VStack align="stretch" gap={4}>
-                {selectedItem?.customerName && (
-                  <Info label="Customer Name" value={selectedItem.customerName} />
+                <Box>
+                  <Text fontSize="sm" color="gray.400" mb={2}>
+                    Move to Stage:
+                  </Text>
+                  <select
+                    value={selectedItem?.pipeline_stage}
+                    onChange={(e: any) => {
+                      if (selectedItem) {
+                        updateStage(
+                          selectedItem.id,
+                          selectedItem.type,
+                          e.target.value as PipelineStage
+                        );
+                      }
+                    }}
+                    style={{
+                      backgroundColor: "#1A202C",
+                      color: "#D69E2E",
+                      border: "1px solid #D69E2E",
+                      borderRadius: "0.375rem",
+                      fontSize: "1rem",
+                      padding: "0.5rem",
+                      width: "100%",
+                      cursor: "pointer",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {STAGES.map((stage) => (
+                      <option key={stage} value={stage}>
+                        {stage}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
+
+                {selectedItem?.phone && (
+                  <Info label="Phone" value={selectedItem.phone} />
                 )}
-                {selectedItem?.phone && <Info label="Phone" value={selectedItem.phone} />}
-                {selectedItem?.email && <Info label="Email" value={selectedItem.email} />}
-                {selectedItem?.address && <Info label="Address" value={selectedItem.address} />}
-                {selectedItem?.job_type && <Info label="Job Type" value={selectedItem.job_type} />}
-                {selectedItem?.estimated_price !== null && selectedItem?.estimated_price !== undefined && (
-                  <Info label="Estimated Price" value={`$${selectedItem.estimated_price}`} />
+                {selectedItem?.email && (
+                  <Info label="Email" value={selectedItem.email} />
+                )}
+                {selectedItem?.address && (
+                  <Info label="Address" value={selectedItem.address} />
+                )}
+                {selectedItem?.notes && (
+                  <Info label="Notes" value={selectedItem.notes} />
+                )}
+                {selectedItem?.job_type && (
+                  <Info label="Job Type" value={selectedItem.job_type} />
+                )}
+                {typeof selectedItem?.estimated_price === "number" && (
+                  <Info
+                    label="Estimated Price"
+                    value={`$${selectedItem.estimated_price}`}
+                  />
                 )}
                 {selectedItem?.date && (
                   <Info
@@ -340,7 +349,10 @@ export default function DashboardPage() {
                   />
                 )}
                 {selectedItem?.appointmentTitle && (
-                  <Info label="Appointment Title" value={selectedItem.appointmentTitle} />
+                  <Info
+                    label="Appointment Title"
+                    value={selectedItem.appointmentTitle}
+                  />
                 )}
                 {selectedItem?.appointmentDescription && (
                   <Info
@@ -357,17 +369,18 @@ export default function DashboardPage() {
                   Close
                 </Button>
 
-                {selectedItem?.type === "customer" && !selectedItem?.appointmentId && (
-                  <Button
-                    colorScheme="yellow"
-                    onClick={() => {
-                      const id = selectedItem.id.replace("cust-", "");
-                      navigate(`/appointments/new?customerId=${id}`);
-                    }}
-                  >
-                    Create Appointment
-                  </Button>
-                )}
+                {selectedItem?.type === "customer" &&
+                  !selectedItem?.appointmentId && (
+                    <Button
+                      colorScheme="yellow"
+                      onClick={() => {
+                        const id = selectedItem.id.replace("cust-", "");
+                        navigate(`/appointments/new?customerId=${id}`);
+                      }}
+                    >
+                      Create Appointment
+                    </Button>
+                  )}
 
                 {selectedItem?.appointmentId && (
                   <Button colorScheme="red" onClick={handleCancelAppointment}>
@@ -379,7 +392,7 @@ export default function DashboardPage() {
           </Dialog.Content>
         </Dialog.Positioner>
       </Dialog.Root>
-    </DndContext>
+    </Box>
   );
 }
 
@@ -398,29 +411,48 @@ function PipelineColumn({
   title,
   stage,
   items,
-  onChangeStage,
-  onItemClick,
+  onCardClick,
+  onStageClick,
+  selectedCardId,
+  hasSelectedCard,
 }: {
   title: PipelineStage;
   stage: PipelineStage;
   items: PipelineItem[];
-  onChangeStage: (id: string, type: "appointment" | "customer", newStage: PipelineStage) => void;
-  onItemClick: (item: PipelineItem) => void;
+  onCardClick: (item: PipelineItem) => void;
+  onStageClick: (stage: PipelineStage) => void;
+  selectedCardId: string | null;
+  hasSelectedCard: boolean;
 }) {
-  const { setNodeRef } = useDroppable({ id: stage });
-
   return (
     <Box
-      ref={setNodeRef}
       bg="#0F0F0F"
-      border="1px solid #2A2A2A"
+      border="1px solid"
+      borderColor={hasSelectedCard ? "gold.500" : "#2A2A2A"}
       rounded="lg"
       p={3}
       minH="240px"
       shadow="md"
+      transition="all 0.2s ease"
+      cursor={hasSelectedCard ? "pointer" : "default"}
+      onClick={() => hasSelectedCard && onStageClick(stage)}
+      _hover={
+        hasSelectedCard
+          ? {
+              borderColor: "gold.300",
+              shadow: "xl",
+              bg: "#1A1A1A",
+            }
+          : undefined
+      }
     >
-      <Flex justify="space-between" align="center" mb={3}>
-        <Text fontWeight="bold" color="gold.300">
+      <Flex
+        justify="space-between"
+        align="center"
+        mb={3}
+        cursor={hasSelectedCard ? "pointer" : "default"}
+      >
+        <Text fontSize="sm" fontWeight="semibold" color="gold.300">
           {title}
         </Text>
 
@@ -430,25 +462,22 @@ function PipelineColumn({
           fontSize="0.75rem"
           px={2}
           py={0.5}
-          rounded="md"
+          rounded="full"
         >
           {items.length}
         </Badge>
       </Flex>
 
-      <VStack align="stretch" gap={3}>
-        {items.length === 0 && (
-          <Text fontSize="xs" color="gray.500">
-            No items yet.
-          </Text>
-        )}
-
+      <VStack gap={2} align="stretch">
         {items.map((item) => (
-          <DraggableCard
+          <PipelineCard
             key={item.id}
             item={item}
-            onChangeStage={onChangeStage}
-            onClick={onItemClick}
+            onClick={(e, item) => {
+              e.stopPropagation();
+              onCardClick(item);
+            }}
+            isSelected={item.id === selectedCardId}
           />
         ))}
       </VStack>
@@ -456,43 +485,32 @@ function PipelineColumn({
   );
 }
 
-function DraggableCard({
+function PipelineCard({
   item,
-  onChangeStage,
   onClick,
+  isSelected,
 }: {
   item: PipelineItem;
-  onChangeStage: (id: string, type: "appointment" | "customer", newStage: PipelineStage) => void;
-  onClick: (item: PipelineItem) => void;
+  onClick: (e: React.MouseEvent, item: PipelineItem) => void;
+  isSelected: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.id,
-  });
-
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   return (
     <Box
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      bg="#111"
-      border="1px solid #2A2A2A"
+      bg={isSelected ? "#2A2A2A" : "#111"}
+      border="2px solid"
+      borderColor={isSelected ? "gold.300" : "#2A2A2A"}
       rounded="lg"
       p={3}
-      transition="0.2s"
-      cursor="grab"
+      transition="all 0.2s ease"
+      cursor="pointer"
       _hover={{
-        borderColor: "gold.300",
+        borderColor: isSelected ? "gold.400" : "gold.300",
         transform: "translateY(-2px)",
+        shadow: "lg",
+        bg: isSelected ? "#333" : "#1A1A1A",
       }}
-      onClick={(e) => {
-        if (!isDragging && e.currentTarget === e.target) onClick(item);
-      }}
+      onClick={(e) => onClick(e, item)}
+      boxShadow={isSelected ? "0 0 0 2px rgba(212, 175, 55, 0.3)" : undefined}
     >
       <Flex justify="space-between" align="start" mb={1}>
         <Text fontWeight="semibold" color="white">
@@ -517,31 +535,6 @@ function DraggableCard({
           {new Date(item.date).toLocaleString()}
         </Text>
       )}
-
-      <Box mt={3}>
-        <Text fontSize="xs" color="gray.500" mb={1}>
-          Change stage
-        </Text>
-
-        <NativeSelectRoot size="xs">
-          <NativeSelectField
-            value={item.pipeline_stage}
-            onChange={(e) => {
-              e.stopPropagation();
-              onChangeStage(item.id, item.type, e.target.value as PipelineStage);
-            }}
-            bg="black"
-            color="gold"
-            border="1px solid #3A3A3A"
-          >
-            {STAGES.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </NativeSelectField>
-        </NativeSelectRoot>
-      </Box>
     </Box>
   );
 }

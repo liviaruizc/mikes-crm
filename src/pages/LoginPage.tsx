@@ -22,6 +22,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
@@ -171,7 +173,13 @@ export default function LoginPage() {
       return;
     }
 
+
     setLoading(true);
+    
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match");
+    return;
+    }
 
     try {
       const { error } = await supabase.auth.signUp({
@@ -489,6 +497,37 @@ export default function LoginPage() {
                   </Field.ErrorText>
                 )}
               </Field.Root>
+
+              {isSignUp && (
+                <Field.Root required invalid={!!confirmPasswordError}>
+                  <Field.Label fontWeight="500" color="black">
+                    Confirm Password
+                  </Field.Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setConfirmPasswordError("");
+                      setAuthError("");
+                    }}
+                    placeholder="Re-enter password"
+                    bg="white"
+                    border="1px solid"
+                    borderColor={confirmPasswordError ? "red.500" : "gray.300"}
+                    color="black"
+                    _focus={{
+                      borderColor: confirmPasswordError ? "red.500" : "#f59e0b",
+                      boxShadow: confirmPasswordError ? "0 0 0 1px red" : "0 0 0 1px #f59e0b",
+                    }}
+                  />
+                  {confirmPasswordError && (
+                    <Field.ErrorText color="red.500" fontSize="sm" mt={1}>
+                      {confirmPasswordError}
+                    </Field.ErrorText>
+                  )}
+                </Field.Root>
+)}
 
               <Button
                 type="submit"

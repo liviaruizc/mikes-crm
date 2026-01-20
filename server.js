@@ -25,6 +25,49 @@ import { dirname, join } from 'path';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 import rateLimit from 'express-rate-limit';
+import { parsePhoneNumber } from 'libphonenumber-js';
+import Joi from 'joi';
+
+// Validate SMS request
+const smsSchema = Joi.object({
+  to: Joi.string()
+    .required()
+    .custom((value, helpers) => {
+      try {
+        const parsed = parsePhoneNumber(value, 'US');
+        if (!parsed || !parsed.isValid()) {
+          return helpers.error('Invalid phone number');
+        }
+      } catch (err) {
+        return helpers.error('Invalid phone number format');
+      }
+      return value;
+    }),
+  message: Joi.string()
+    .max(160) // SMS limit
+    .required()
+    .messages({
+      'string.max': 'Message cannot exceed 160 characters',
+    }),
+});
+
+// Rate limiting for authentication endpoints (max 5 attempts per 15 minutes per IP)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: 'Too many login attempts. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development', // Skip in development
+});
+
+// Login-specific limiter: more strict
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 3, // 3 attempts per minute
+  skipSuccessfulRequests: true, // Don't count successful logins
+  message: 'Too many login attempts. Wait before trying again.',
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,6 +79,20 @@ config({ path: join(__dirname, '.env.local') });
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Create separate client with service role key for cron jobs
+// This bypasses RLS so it can access ALL users' appointments for reminders
+const supabaseService = createClient(
+  supabaseUrl,
+  process.env.VITE_SUPABASE_SERVICE_KEY || supabaseKey
+);
+
+// Log which client is being used
+if (process.env.VITE_SUPABASE_SERVICE_KEY) {
+  console.log('✅ Using Service Role Key for cron jobs');
+} else {
+  console.warn('⚠️ Service Role Key not configured. SMS reminders may fail.');
+}
 
 /**
  * Get owner phone number from database settings
@@ -64,10 +121,39 @@ async function getOwnerPhone() {
 
 const app = express();
 
-// Configure CORS - Allow all origins
+// Enforce HTTPS in production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    if (!req.secure && req.get('x-forwarded-proto') !== 'https') {
+      return res.redirect(301, `https://${req.get('host')}${req.url}`);
+    }
+  }
+  next();
+});
+
+// Add security headers
+app.use((req, res, next) => {
+  res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Configure CORS - Allow restricted origins
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5173').split(',');
+
 app.use(cors({
-  origin: true, // Allow all origins
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -139,7 +225,16 @@ function formatUSPhoneNumber(phone) {
 }
 
 app.post('/api/send-sms', smsLimiter, authenticateRequest, async (req, res) => {
-  let { to, message } = req.body;
+
+  // Validate input
+  const { error, value } = smsSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ 
+      error: error.details[0].message 
+    });
+  }
+  
+  let { to, message } = value;
 
   if (!to || !message) {
     return res.status(400).json({ error: 'Missing required fields: to, message' });
@@ -168,8 +263,8 @@ app.post('/api/send-sms', smsLimiter, authenticateRequest, async (req, res) => {
       apiSecret: process.env.VONAGE_API_SECRET,
     });
     
-    console.log(`Attempting to send SMS via Vonage from ${process.env.VONAGE_FROM_NUMBER} to ${to}`);
-    console.log(`Message: ${message}`);
+    console.log(`Attempting to send SMS via Vonage to customer`);
+    console.log(`✅ Vonage SMS sent successfully`);
     
     const result = await vonage.sms.send({
       to: to,
@@ -177,9 +272,8 @@ app.post('/api/send-sms', smsLimiter, authenticateRequest, async (req, res) => {
       text: message,
     });
 
-    console.log(`✅ Vonage SMS sent successfully!`);
-    console.log(`Status: ${result.messages[0].status}`);
-    console.log(`Message ID: ${result.messages[0]['message-id']}`);
+    console.log(`✅ SMS sent successfully`);
+    console.error(`❌ SMS failed - Status: ${msg.status}`);
     
     return res.status(200).json({ 
       success: true, 
@@ -225,20 +319,37 @@ async function sendVonageSMS(to, message) {
     if (result.messages && result.messages[0]) {
       const msg = result.messages[0];
       if (msg.status === '0') {
-        console.log(`✅ SMS sent to ${to} - Message ID: ${msg['message-id']}`);
+        console.log(`✅ SMS sent successfully`);
         return { success: true, result };
       } else {
-        console.error(`❌ SMS failed to ${to} - Status: ${msg.status}, Error: ${msg['error-text']}`);
+        console.error(`❌ SMS failed - Status: ${msg.status}`);
         return { success: false, error: msg['error-text'] || 'SMS failed' };
       }
     }
     
-    console.log(`✅ SMS sent to ${to}`);
+    console.log(`✅ SMS sent!`);
     return { success: true, result };
   } catch (error) {
     console.error('❌ Vonage error:', error.message);
     console.error('Full error:', error);
     return { success: false, error: error.message };
+  }
+}
+
+// Middleware to log all database operations
+const logAudit = async (userId, action, tableName, recordId, req) => {
+  try {
+    await supabaseService.from('audit_logs').insert([{
+      user_id: userId,
+      action,
+      table_name: tableName,
+      record_id: recordId,
+      ip_address: req.ip,
+      details: { endpoint: req.path },
+    }]);
+  } catch (err) {
+    console.error('Audit logging failed:', err);
+    // Don't fail the main request if audit log fails
   }
 }
 
@@ -254,8 +365,7 @@ async function checkAndSendReminders() {
 
   try {
     // Fetch appointments in the 24-hour window with customer pipeline_stage
-    const { data: appointments, error } = await supabase
-      .from('appointments')
+    const { data: appointments, error } = await supabaseService.from('appointments')
       .select(`
         id,
         title,

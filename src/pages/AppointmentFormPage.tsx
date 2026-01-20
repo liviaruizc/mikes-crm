@@ -22,11 +22,10 @@ import {
   Input,
   Textarea,
   Button,
-  NativeSelectRoot,
-  NativeSelectField,
   createToaster,
   useDisclosure,
   Flex,
+  Popover
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
@@ -47,6 +46,7 @@ export default function AppointmentFormPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [existingAppointments, setExistingAppointments] = useState<any[]>([]); // For time conflict checking
   const [loading, setLoading] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -315,29 +315,84 @@ export default function AppointmentFormPage() {
       </Flex>
 
       <VStack gap={5} maxW="600px" mx="auto">
-        {/* CUSTOMER */}
+
+        {/* CUSTOMER AUTOCOMPLETE */}
         <Field.Root required w="full" invalid={errors.customer_id}>
           <Field.Label fontWeight="500" color="black">Customer *</Field.Label>
-          <NativeSelectRoot>
-            <NativeSelectField
-              placeholder="Select a customer"
-              name="customer_id"
-              value={form.customer_id}
-              onChange={handleChange}
+          <Box position="relative">
+            <Input
+              placeholder="Type to search customers"
+              value={form.customer_name}
+              onChange={e => {
+                setForm({ ...form, customer_name: e.target.value, customer_id: "" });
+                setShowCustomerDropdown(true);
+              }}
+              onFocus={() => setShowCustomerDropdown(true)}
+              onBlur={() => {
+                // Delay closing to allow click on dropdown item
+                setTimeout(() => setShowCustomerDropdown(false), 200);
+              }}
               bg="white"
               border="1px solid"
               borderColor="gray.300"
               color="black"
               _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
-            >
-              <option value="" style={{ color: 'black' }}>Select a customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id} style={{ color: 'black' }}>
-                  {c.full_name}
-                </option>
-              ))}
-            </NativeSelectField>
-          </NativeSelectRoot>
+              autoComplete="off"
+            />
+            {showCustomerDropdown && (
+              <Box
+                position="absolute"
+                top="100%"
+                left={0}
+                right={0}
+                mt={1}
+                bg="white"
+                border="1px solid"
+                borderColor="gray.300"
+                borderRadius="md"
+                maxH="200px"
+                overflowY="auto"
+                zIndex={10}
+                boxShadow="md"
+              >
+                {customers.filter(c =>
+                  c.full_name.toLowerCase().includes(form.customer_name.toLowerCase())
+                ).length > 0 ? (
+                  customers.filter(c =>
+                    c.full_name.toLowerCase().includes(form.customer_name.toLowerCase())
+                  ).map(c => (
+                    <Box
+                      key={c.id}
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      color="black"
+                      _hover={{ bg: "gray.100" }}
+                      onClick={() => {
+                        setForm({
+                          ...form,
+                          customer_id: c.id,
+                          customer_name: c.full_name,
+                          customer_phone: c.phone || "",
+                          customer_email: c.email || "",
+                          customer_address: c.address || "",
+                          job_type: c.job_type || "",
+                          estimated_price: c.estimated_price?.toString() || "",
+                        });
+                        setShowCustomerDropdown(false);
+                      }}
+                    >
+                      {c.full_name}
+                    </Box>
+                  ))
+                ) : (
+                  <Box px={4} py={2} color="gray.500">
+                    No customers found
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
           {errors.customer_id && (
             <Field.ErrorText color="red.600">Customer is required</Field.ErrorText>
           )}
@@ -499,16 +554,20 @@ export default function AppointmentFormPage() {
         <Field.Root required w="full" invalid={errors.time}>
           <Field.Label fontWeight="500" color="black">Start Time *</Field.Label>
           <Flex gap={3}>
-            <NativeSelectRoot flex={2}>
-              <NativeSelectField
+            <Box flex={2}>
+              <select
                 name="time"
                 value={form.time}
                 onChange={handleChange}
-                bg="white"
-                border="1px solid"
-                borderColor="gray.300"
-                color="black"
-                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  background: 'white',
+                  border: '1px solid',
+                  borderColor: '#D1D5DB',
+                  borderRadius: '0.375rem',
+                  color: 'black'
+                }}
               >
                 <option value="">Select time</option>
                 {timeSlots.map((slot) => {
@@ -519,23 +578,27 @@ export default function AppointmentFormPage() {
                     </option>
                   );
                 })}
-              </NativeSelectField>
-            </NativeSelectRoot>
-            <NativeSelectRoot flex={1}>
-              <NativeSelectField
+              </select>
+            </Box>
+            <Box flex={1}>
+              <select
                 name="period"
                 value={form.period}
                 onChange={handleChange}
-                bg="white"
-                border="1px solid"
-                borderColor="gray.300"
-                color="black"
-                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  background: 'white',
+                  border: '1px solid',
+                  borderColor: '#D1D5DB',
+                  borderRadius: '0.375rem',
+                  color: 'black'
+                }}
               >
                 <option value="AM">AM</option>
                 <option value="PM">PM</option>
-              </NativeSelectField>
-            </NativeSelectRoot>
+              </select>
+            </Box>
           </Flex>
           {errors.time && (
             <Field.ErrorText color="red.600">Time is required</Field.ErrorText>
