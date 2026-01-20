@@ -7,7 +7,6 @@ import {
   VStack,
   NativeSelectRoot,
   NativeSelectField,
-  Box,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { supabase, getCurrentUserId } from "../../lib/supabaseClient";
