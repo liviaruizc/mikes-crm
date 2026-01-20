@@ -312,19 +312,20 @@ export default function CustomerForm({
 
               <Field.Root>
                 <Field.Label fontWeight="500" color="black">Job Type</Field.Label>
-                <Box
-                  as="select"
-                  bg="white"
-                  border="1px solid"
-                  borderColor="gray.300"
-                  color="black"
-                  borderRadius="md"
-                  padding="8px"
-                  fontSize="md"
-                  w="full"
-                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                <select
                   value={form.job_type}
-                  onChange={(e: any) => updateField("job_type", e.target.value)}
+                  onChange={(e) => updateField("job_type", e.target.value)}
+                  style={{
+                    backgroundColor: "white",
+                    border: "1px solid",
+                    borderColor: "#CBD5E0",
+                    color: "black",
+                    borderRadius: "0.375rem",
+                    padding: "8px",
+                    fontSize: "1rem",
+                    width: "100%",
+                    cursor: "pointer"
+                  }}
                 >
                   <option value="">Select job type...</option>
                   <option value="Kitchen">Kitchen</option>
@@ -334,7 +335,7 @@ export default function CustomerForm({
                   <option value="Flooring">Flooring</option>
                   <option value="TV Wall">TV Wall</option>
                   <option value="Misc">Misc</option>
-                </Box>
+                </select>
               </Field.Root>
 
               <Field.Root>
