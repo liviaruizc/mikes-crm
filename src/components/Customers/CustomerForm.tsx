@@ -324,7 +324,7 @@ export default function CustomerForm({
                   w="full"
                   _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
                   value={form.job_type}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField("job_type", e.target.value)}
+                  onChange={(e: any) => updateField("job_type", e.target.value)}
                 >
                   <option value="">Select job type...</option>
                   <option value="Kitchen">Kitchen</option>
