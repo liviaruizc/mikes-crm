@@ -197,6 +197,14 @@ app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
   return res.status(200).json({ success: true });
 });
 
+// Serve static files from dist folder
+app.use(express.static(join(__dirname, "dist")));
+
+// SPA fallback - serve index.html for any unmatched routes
+app.use((req, res) => {
+  res.sendFile(join(__dirname, "dist", "index.html"));
+});
+
 // Reminder checker
 async function checkAndSendReminders() {
   console.log(" Checking for appointments to remind...");
@@ -306,12 +314,6 @@ cron.schedule("* * * * *", () => {
   console.log(" Running scheduled reminder check...");
   checkAndSendReminders();
 });
-
-// Catch-all route for SPA (must be after API routes)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 
 // Run on startup
 console.log(" Reminder system initialized. Checking for appointments...");
