@@ -185,8 +185,7 @@ app.use(cors({
   optionsSuccessStatus: 200,
 }));
 
-// Handle preflight explicitly (in case of proxies)
-app.options("*", cors());
+// Preflight handled by cors middleware; avoid wildcard route patterns
 
 app.use(express.json());
 app.use((req, _res, next) => { console.log(`${req.method} ${req.path}`); next(); });
