@@ -16,6 +16,8 @@ const __dirname = dirname(__filename);
 
 // Load env
 config({ path: join(__dirname, ".env.local") });
+// Timezone for formatting outgoing messages (defaults to New York)
+const TIME_ZONE = process.env.TIME_ZONE || "America/New_York";
 
 // Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -272,11 +274,13 @@ async function checkAndSendReminders() {
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: TIME_ZONE,
       });
       const formattedTime = startTime.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
+        timeZone: TIME_ZONE,
       });
       const windowLabel = sendType === "24h" ? "24 hours" : "1 hour";
 

@@ -189,11 +189,13 @@ export default function AppointmentFormPage() {
           
           const hour24 = hour.toString().padStart(2, "0");
           const minute = minuteStr.padStart(2, "0");
-          
-          const localDateTime = `${dateValue}T${hour24}:${minute}:00-05:00`;
+
+          // Build a local Date and store UTC ISO (no hardcoded offset)
+          const localDate = new Date(`${dateValue}T${hour24}:${minute}:00`);
+          const utcIso = localDate.toISOString();
           nextForm = {
             ...nextForm,
-            start_time: localDateTime,
+            start_time: utcIso,
           };
         }
       }
@@ -268,7 +270,9 @@ export default function AppointmentFormPage() {
 
     const startHourPadded = startHour.toString().padStart(2, '0');
     const startMinute = minuteStrRaw.padStart(2, '0');
-    const startTimeIso = `${form.date}T${startHourPadded}:${startMinute}:00-05:00`;
+    // Build local Date from input and store as UTC ISO (handles DST)
+    const startLocal = new Date(`${form.date}T${startHourPadded}:${startMinute}:00`);
+    const startTimeIso = startLocal.toISOString();
 
     let endHour = startHour + 1;
     
@@ -276,7 +280,8 @@ export default function AppointmentFormPage() {
     if (endHour >= 24) {
       endHour = endHour - 24;
     }
-    const endTime = `${form.date}T${endHour.toString().padStart(2, '0')}:${startMinute}:00-05:00`;
+    const endLocal = new Date(startLocal.getTime() + 60 * 60 * 1000);
+    const endTime = endLocal.toISOString();
 
     const userId = await getCurrentUserId();
     if (!userId) {
