@@ -179,8 +179,10 @@ app.use(cors({
 app.use(express.json());
 app.use((req, _res, next) => { console.log(`${req.method} ${req.path}`); next(); });
 
+// Resolve dist directory (Render builds to project root, not src)
+const distDir = join(__dirname, "..", "dist");
 // Serve static files from dist folder
-app.use(express.static(join(__dirname, "dist")));
+app.use(express.static(distDir));
 
 // SMS endpoint
 app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
@@ -197,12 +199,12 @@ app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
   return res.status(200).json({ success: true });
 });
 
-// Serve static files from dist folder
-app.use(express.static(join(__dirname, "dist")));
+// Serve static files from dist folder (redundant in case of middleware order)
+app.use(express.static(distDir));
 
 // SPA fallback - serve index.html for any unmatched routes
 app.use((req, res) => {
-  res.sendFile(join(__dirname, "dist", "index.html"));
+  res.sendFile(join(distDir, "index.html"));
 });
 
 // Reminder checker
