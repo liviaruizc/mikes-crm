@@ -420,10 +420,10 @@ export default function CalendarPage() {
                   <Button 
                     variant="outline"
                     border="1px solid"
-                    borderColor="#f59e0b"
-                    color="#f59e0b"
+                    borderColor="transparent"
+                    color="black"
                     fontWeight="500"
-                    _hover={{ bg: "#fef3c7" }}
+                    _hover={{ bg: "black" }}
                     transition="colors 0.15s"
                     onClick={() => {
                       if (selectedEvent) {

@@ -220,7 +220,9 @@ export default function AppointmentDetailsPage() {
         </Card.Root>
 
         <Button
-          colorScheme="orange"
+          bg="transparent"
+          _hover={{ bg: "transparent" }}
+          color="black"
           size="lg"
           onClick={() => {
             downloadAppointmentICS({

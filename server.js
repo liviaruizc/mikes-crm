@@ -167,16 +167,26 @@ app.use((_, res, next) => {
 });
 
 // CORS
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:5173").split(",");
+const rawOrigins = process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:5173";
+const allowedOrigins = rawOrigins
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter((o) => o.length > 0);
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
+    const normalized = origin ? origin.replace(/\/$/, "") : origin;
+    if (!normalized || allowedOrigins.includes(normalized)) return callback(null, true);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+  optionsSuccessStatus: 200,
 }));
+
+// Handle preflight explicitly (in case of proxies)
+app.options("*", cors());
 
 app.use(express.json());
 app.use((req, _res, next) => { console.log(`${req.method} ${req.path}`); next(); });
