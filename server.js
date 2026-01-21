@@ -179,6 +179,9 @@ app.use(cors({
 app.use(express.json());
 app.use((req, _res, next) => { console.log(`${req.method} ${req.path}`); next(); });
 
+// Serve static files from dist folder
+app.use(express.static(join(__dirname, "dist")));
+
 // SMS endpoint
 app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
   const { error, value } = smsSchema.validate(req.body);
@@ -304,11 +307,16 @@ cron.schedule("* * * * *", () => {
   checkAndSendReminders();
 });
 
+// Catch-all route for SPA (must be after API routes)
+app.get("*", (req, res) => {
+  res.sendFile(join(__dirname, "dist", "index.html"));
+});
+
 // Run on startup
 console.log(" Reminder system initialized. Checking for appointments...");
 checkAndSendReminders();
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`SMS API server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

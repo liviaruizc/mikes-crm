@@ -445,7 +445,7 @@ export default function CalendarPage() {
                     bg="#f59e0b"
                     color="black"
                     fontWeight="500"
-                    _hover={{ bg: "#d97706" }}
+                    _hover={{ bg: "transparent" }}
                     transition="colors 0.15s"
                     onClick={handleSendReminder}
                   >
