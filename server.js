@@ -179,6 +179,9 @@ app.use(cors({
 app.use(express.json());
 app.use((req, _res, next) => { console.log(`${req.method} ${req.path}`); next(); });
 
+// Serve static files from dist folder
+app.use(express.static(join(__dirname, "dist")));
+
 // SMS endpoint
 app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
   const { error, value } = smsSchema.validate(req.body);
@@ -197,13 +200,7 @@ app.post("/api/send-sms", smsLimiter, authenticateRequest, async (req, res) => {
 // Reminder checker
 async function checkAndSendReminders() {
   console.log(" Checking for appointments to remind...");
-Serve static files and handle SPA routing
-app.use(express.static(join(__dirname, "dist")));
-app.get("*", (req, res) => {
-  res.sendFile(join(__dirname, "dist", "index.html"));
-});
 
-// 
   const now = new Date();
   const fetchEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000);
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -308,6 +305,11 @@ app.get("*", (req, res) => {
 cron.schedule("* * * * *", () => {
   console.log(" Running scheduled reminder check...");
   checkAndSendReminders();
+});
+
+// Catch-all route for SPA (must be after API routes)
+app.get('/:path(*)', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Run on startup
