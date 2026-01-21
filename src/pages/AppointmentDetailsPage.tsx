@@ -106,41 +106,44 @@ export default function AppointmentDetailsPage() {
 
   if (loading) {
     return (
-      <Box p={8} display="flex" justifyContent="center" alignItems="center" minH="400px">
-        <Spinner size="xl" color="orange.500" />
+      <Box bg="bg" minH="100vh" p={8} display="flex" justifyContent="center" alignItems="center">
+        <Spinner size="xl" color="gold.400" />
       </Box>
     );
   }
 
   if (!appointment) {
     return (
-      <Box p={8}>
-        <Text>Appointment not found.</Text>
-        <Button mt={4} onClick={() => navigate("/calendar")}>
-          Back to Calendar
-        </Button>
+      <Box bg="bg" minH="100vh" p={8}>
+        <Box maxW="1400px" mx="auto">
+          <Text color="fg">Appointment not found.</Text>
+          <Button mt={4} onClick={() => navigate("/calendar")}>
+            Back to Calendar
+          </Button>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }}>
-      <Button 
-        mb={4} 
-        variant="ghost" 
-        onClick={() => navigate("/calendar")}
-      >
-        ← Back to Calendar
-      </Button>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <Button 
+          mb={4} 
+          variant="ghost" 
+          onClick={() => navigate("/calendar")}
+        >
+          ← Back to Calendar
+        </Button>
 
-      <Heading size="xl" mb={6}>
-        {appointment.title}
-      </Heading>
+        <Heading size="xl" mb={6} color="fg">
+          {appointment.title}
+        </Heading>
 
       <Stack gap={4}>
-        <Card.Root>
+        <Card.Root bg="white" boxShadow="0 2px 8px rgba(0,0,0,0.08)" borderRadius="12px">
           <Card.Header>
-            <Heading size="md">Appointment Details</Heading>
+            <Heading size="md" color="fg">Appointment Details</Heading>
           </Card.Header>
           <Card.Body>
             <Stack gap={3}>
@@ -164,9 +167,9 @@ export default function AppointmentDetailsPage() {
           </Card.Body>
         </Card.Root>
 
-        <Card.Root>
+        <Card.Root bg="white" boxShadow="0 2px 8px rgba(0,0,0,0.08)" borderRadius="12px">
           <Card.Header>
-            <Heading size="md">Customer Information</Heading>
+            <Heading size="md" color="fg">Customer Information</Heading>
           </Card.Header>
           <Card.Body>
             <Stack gap={3}>
@@ -232,7 +235,7 @@ export default function AppointmentDetailsPage() {
           }}
           mt={4}
         >
-          📅 Add to Calendar
+          Add to Calendar
         </Button>
 
         <Button
@@ -244,6 +247,7 @@ export default function AppointmentDetailsPage() {
           Back to Calendar
         </Button>
       </Stack>
+      </Box>
     </Box>
   );
 }

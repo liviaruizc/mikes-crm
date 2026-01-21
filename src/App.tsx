@@ -13,6 +13,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import MapPage from "./pages/MapPage";
 import DealsPage from "./pages/DealsPage";
 import SettingsPage from "./pages/SettingsPage";
+import StatsPage from "./pages/StatsPage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { initializeNotificationListener } from "./lib/notificationService";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/appointments/new" element={<AppointmentFormPage />} />
         <Route path="/appointment/:id" element={<AppointmentDetailsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/stats" element={<StatsPage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

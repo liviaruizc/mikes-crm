@@ -12,6 +12,10 @@ A comprehensive Customer Relationship Management system built for service-based 
 
 ### 👥 Customer Management
 - Full CRUD operations for customer records
+- **Address Autocomplete** - Smart address search powered by Google Places API
+  - Start typing an address to get instant suggestions
+  - Automatically fills street, city, state, and zip code fields
+  - Can still manually edit address fields if needed
 - Customer details include:
   - Full name, phone, email
   - Separate address fields (street, city, state, zip)
@@ -62,6 +66,7 @@ A comprehensive Customer Relationship Management system built for service-based 
 ### Backend & Services
 - **Supabase** - PostgreSQL database and authentication
 - **Twilio** - SMS appointment reminders
+- **Google Maps API** - Address autocomplete and location mapping
 - **Nominatim API** - Free geocoding service (OpenStreetMap)
 
 ### Key Libraries
@@ -75,19 +80,32 @@ A comprehensive Customer Relationship Management system built for service-based 
 - Node.js (v16 or higher)
 - npm or yarn
 - Supabase account
+- Google Maps API key (for address autocomplete and maps)
 - Twilio account (for SMS functionality)
 
 ## Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (you can use `.env.example` as a template):
 
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=your_twilio_phone_number
 ```
+
+**Note:** The `VITE_GOOGLE_MAPS_API_KEY` is required for:
+- Address autocomplete in customer forms
+- Map visualization features
+
+To get a Google Maps API key:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the "Places API" and "Maps JavaScript API"
+4. Create credentials (API Key)
+5. Restrict the API key to your domain for security
 
 ## Database Setup
 

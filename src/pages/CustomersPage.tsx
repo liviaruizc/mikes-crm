@@ -78,29 +78,29 @@ export default function CustomersPage() {
   }
 
   return (
-    <Box padding={6}>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <Box mb={6}>
+          <Heading size="lg" fontWeight="500" color="fg">Customers</Heading>
+          <Text color="fg-muted">Manage your customer list and lead sources.</Text>
+        </Box>
 
-      <Box mb={6}>
-        <Heading size="lg" fontWeight="500" color="black">Customers</Heading>
-        <Text color="gray.600">Manage your customer list and lead sources.</Text>
-      </Box>
+        <Button 
+          onClick={() => { setSelectedCustomer(null); onOpen(); }}
+          bg="gold.400"
+          color="black"
+          fontWeight="500"
+          _hover={{ bg: "gold.500" }}
+          transition="colors 0.15s"
+          mb={4}
+        >
+          + New Customer
+        </Button>
 
-      <Button 
-        onClick={() => { setSelectedCustomer(null); onOpen(); }}
-        bg="#f59e0b"
-        color="black"
-        fontWeight="500"
-        _hover={{ bg: "#d97706" }}
-        transition="colors 0.15s"
-        mb={4}
-      >
-        + New Customer
-      </Button>
-
-      {loading ? (
-        <Spinner size="xl" color="#f59e0b" />
-      ) : (
-        <Table.Root variant="outline" bg="white" borderRadius="lg" border="1px solid" borderColor="gray.200">
+        {loading ? (
+          <Spinner size="xl" color="gold.400" />
+        ) : (
+          <Table.Root variant="outline" bg="white" borderRadius="12px" border="none" boxShadow="0 2px 8px rgba(0,0,0,0.08)">
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeader color="black" fontWeight="500">Name</Table.ColumnHeader>
@@ -154,7 +154,7 @@ export default function CustomersPage() {
                     <Box
                       padding="4px 8px"
                       borderRadius="md"
-                      bg={c.lead_sources.color}
+                      bg="transparent"
                       display="inline-block"
                       color="black"
                       fontWeight="500"
@@ -206,6 +206,7 @@ export default function CustomersPage() {
         onClose={handleCloseDialog}
         existingCustomer={selectedCustomer}
       />
+      </Box>
     </Box>
   );
 }

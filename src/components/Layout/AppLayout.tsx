@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { VStack, Box, Flex, Heading, IconButton, useDisclosure, Drawer, Button, createToaster } from '@chakra-ui/react';
+import { VStack, Box, Flex, Heading, IconButton, useDisclosure, Drawer, Button, createToaster, Text } from '@chakra-ui/react';
 import { supabase } from '../../lib/supabaseClient';
+import { Home, CalendarDays, Users, Briefcase, Map, Settings, Bell, PieChart, GitBranch, Plus } from 'lucide-react';
+import logo from '../../../logo.svg';
 
 const toaster = createToaster({
   placement: "top",
@@ -12,15 +14,16 @@ export default function AppLayout() {
   const navigate = useNavigate();
 
   const navLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/appointments/new', label: 'New Appointment' },
-    { to: '/calendar', label: 'Calendar' },
-    { to: '/notifications', label: 'Notifications' },
-    { to: '/customers', label: 'Customers' },
-    { to: '/deals', label: 'Deals' },
-    { to: '/pipeline', label: 'Pipeline' },
-    { to: '/map', label: 'Map' },
-    { to: '/settings', label: 'Settings' },
+    { to: '/', label: 'Home', icon: Home },
+    { to: '/appointments/new', label: 'New Appointment', icon: Plus },
+    { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
+    { to: '/customers', label: 'Customers', icon: Users },
+    { to: '/deals', label: 'Deals', icon: Briefcase },
+    { to: '/pipeline', label: 'Pipeline', icon: GitBranch },
+    { to: '/stats', label: 'Stats', icon: PieChart },
+    { to: '/map', label: 'Map', icon: Map },
+    { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
   async function handleLogout() {
@@ -42,23 +45,30 @@ export default function AppLayout() {
     }
   }
 
-  const NavLinkItem = ({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) => (
+  const NavLinkItem = ({ to, label, icon: Icon, onClick }: { to: string; label: string; icon: any; onClick?: () => void }) => (
     <NavLink
       to={to}
       onClick={onClick}
       style={({ isActive }) => ({
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
         width: "100%",
-        padding: "12px 16px",
-        borderRadius: "8px",
+        padding: "10px 16px",
+        borderRadius: "4px",
         backgroundColor: isActive ? "#f59e0b" : "transparent",
         color: isActive ? "#000000" : "#FFFFFF",
-        fontWeight: "500",
+        fontWeight: "400",
         textDecoration: "none",
-        fontSize: "16px",
+        fontSize: "15px",
         transition: "all 0.2s",
       })}
     >
-      {label}
+      <Icon size={20} />
+      <Text flex="1" fontSize="15px" fontWeight="400">
+        {label}
+      </Text>
+      <Box as="span" opacity="0.5" fontSize="18px">›</Box>
     </NavLink>
   );
 
@@ -75,7 +85,7 @@ export default function AppLayout() {
         justifyContent="space-between"
       >
         <Heading size="md" color="#f59e0b">
-          Contractor's CRM
+          Cliently
         </Heading>
         <IconButton
           aria-label="Open menu"
@@ -99,12 +109,24 @@ export default function AppLayout() {
           borderColor="gray.200"
           overflowY="auto"
         >
-          <Heading size="lg" color="#f59e0b" mb={8}>
-            Contractor's CRM
-          </Heading>
-          <VStack align="start" gap="3" w="full">
+          <Box mb={8} display="flex" justifyContent="center">
+            <img src={logo} alt="Cliently" style={{ width: '100px', height: '100px' }} />
+          </Box>
+          
+          <Text 
+            fontSize="11px" 
+            fontWeight="600" 
+            color="gray.500" 
+            letterSpacing="0.1em" 
+            mb={3}
+            textTransform="uppercase"
+          >
+            OVERVIEW
+          </Text>
+          
+          <VStack align="start" gap="1" w="full">
             {navLinks.map((link) => (
-              <NavLinkItem key={link.to} to={link.to} label={link.label} />
+              <NavLinkItem key={link.to} to={link.to} label={link.label} icon={link.icon} />
             ))}
             <Button
               w="full"
@@ -128,15 +150,26 @@ export default function AppLayout() {
           <Drawer.Positioner>
             <Drawer.Content bg="#000000">
               <Drawer.Header borderBottom="1px solid" borderColor="gray.700">
-                <Heading size="md" color="#f59e0b">
-                  Contractor's CRM
-                </Heading>
+                <Box display="flex" justifyContent="center">
+                  <img src={logo} alt="Cliently" style={{ width: '60px', height: '60px' }} />
+                </Box>
               </Drawer.Header>
               <Drawer.CloseTrigger />
               <Drawer.Body p={6}>
-                <VStack align="start" gap="3" w="full">
+                <Text 
+                  fontSize="11px" 
+                  fontWeight="600" 
+                  color="gray.500" 
+                  letterSpacing="0.1em" 
+                  mb={3}
+                  textTransform="uppercase"
+                >
+                  OVERVIEW
+                </Text>
+                
+                <VStack align="start" gap="1" w="full">
                   {navLinks.map((link) => (
-                    <NavLinkItem key={link.to} to={link.to} label={link.label} onClick={onClose} />
+                    <NavLinkItem key={link.to} to={link.to} label={link.label} icon={link.icon} onClick={onClose} />
                   ))}
                   <Button
                     w="full"
@@ -185,12 +218,12 @@ export default function AppLayout() {
         overflowX="auto"
       >
         {[
-          { to: '/', label: 'Home', icon: '🏠' },
-          { to: '/calendar', label: 'Calendar', icon: '📅' },
-          { to: '/customers', label: 'Customers', icon: '👥' },
-          { to: '/deals', label: 'Deals', icon: '💼' },
-          { to: '/map', label: 'Map', icon: '🗺️' },
-          { to: '/settings', label: 'Settings', icon: '⚙️' },
+          { to: '/', label: 'Home', icon: Home },
+          { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+          { to: '/customers', label: 'Customers', icon: Users },
+          { to: '/deals', label: 'Deals', icon: Briefcase },
+          { to: '/map', label: 'Map', icon: Map },
+          { to: '/settings', label: 'Settings', icon: Settings },
         ].map((link) => (
           <NavLink
             key={link.to}
@@ -209,7 +242,7 @@ export default function AppLayout() {
               flexShrink: 0,
             })}
           >
-            <span style={{ fontSize: "18px", marginBottom: "2px" }}>{link.icon}</span>
+            <link.icon size={18} style={{ marginBottom: "2px" }} />
             {link.label}
           </NavLink>
         ))}

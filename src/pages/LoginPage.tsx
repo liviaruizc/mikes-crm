@@ -421,7 +421,7 @@ export default function LoginPage() {
             <>
           <Box textAlign="center">
             <Heading color="#f59e0b" fontWeight="600" fontSize="2xl" mb={2}>
-              Contractor's CRM
+              Cliently
             </Heading>
             <Text color="gray.600" fontSize="sm">
               {isSignUp ? "Create your account" : "Sign in to your account"}

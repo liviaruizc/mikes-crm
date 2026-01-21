@@ -103,8 +103,8 @@ export default function NotificationsPage() {
   }
 
   function extractLocationFromBody(body: string): string | null {
-    const match = body.match(/📍\s*(.+)/);
-    return match ? match[1] : null;
+    const match = body.match(/Location:\s*(.+)|📍\s*(.+)/);
+    return match ? (match[1] || match[2]) : null;
   }
 
   function handleNotificationClick(notification: NotificationRecord) {
@@ -115,53 +115,56 @@ export default function NotificationsPage() {
 
   if (!Capacitor.isNativePlatform()) {
     return (
-      <Box p={{ base: 4, md: 8 }}>
-        <Heading size="xl" mb={6}>Notifications</Heading>
-        <Card.Root>
-          <Card.Body>
-            <VStack py={8} gap={4}>
-              <Box color="gray.400">
-                <Bell size={48} />
-              </Box>
-              <Heading size="lg">Mobile Only Feature</Heading>
-              <Text color="gray.600" textAlign="center" maxW="md">
-                Notifications are only available on mobile devices. Install the app on your phone to receive appointment reminders.
-              </Text>
-            </VStack>
-          </Card.Body>
-        </Card.Root>
+      <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+        <Box maxW="1400px" mx="auto">
+          <Heading size="xl" mb={6} color="fg">Notifications</Heading>
+          <Card.Root bg="white" boxShadow="0 2px 8px rgba(0,0,0,0.08)" borderRadius="12px">
+            <Card.Body>
+              <VStack py={8} gap={4}>
+                <Box color="gold.400">
+                  <Bell size={48} />
+                </Box>
+                <Heading size="lg" color="fg">Mobile Only Feature</Heading>
+                <Text color="fg-muted" textAlign="center" maxW="md">
+                  Notifications are only available on mobile devices. Install the app on your phone to receive appointment reminders.
+                </Text>
+              </VStack>
+            </Card.Body>
+          </Card.Root>
+        </Box>
       </Box>
     );
   }
 
   if (loading) {
     return (
-      <Box p={8} display="flex" justifyContent="center" alignItems="center" minH="400px">
-        <Spinner size="xl" color="orange.500" />
+      <Box bg="bg" minH="100vh" p={8} display="flex" justifyContent="center" alignItems="center">
+        <Spinner size="xl" color="gold.400" />
       </Box>
     );
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }}>
-      <HStack mb={6} justifyContent="space-between">
-        <Heading size="xl">Notifications</Heading>
-        {notifications.length > 0 && (
-          <Badge colorScheme="orange" variant="solid" fontSize="md" px={3} py={1}>
-            {notifications.length}
-          </Badge>
-        )}
-      </HStack>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <HStack mb={6} justifyContent="space-between">
+          <Heading size="xl" color="fg">Notifications</Heading>
+          {notifications.length > 0 && (
+            <Badge colorScheme="gold" variant="solid" fontSize="md" px={3} py={1}>
+              {notifications.length}
+            </Badge>
+          )}
+        </HStack>
 
       {notifications.length === 0 ? (
-        <Card.Root>
+        <Card.Root bg="white" boxShadow="0 2px 8px rgba(0,0,0,0.08)" borderRadius="12px">
           <Card.Body>
             <VStack py={8} gap={4}>
-              <Box color="gray.400">
+              <Box color="gold.400">
                 <Bell size={48} />
               </Box>
-              <Heading size="lg">No Notifications</Heading>
-              <Text color="gray.600" textAlign="center" maxW="md">
+              <Heading size="lg" color="fg">No Notifications</Heading>
+              <Text color="fg-muted" textAlign="center" maxW="md">
                 You don't have any scheduled notifications yet. Create an appointment to receive a reminder 24 hours before.
               </Text>
             </VStack>
@@ -172,35 +175,38 @@ export default function NotificationsPage() {
           {notifications.map((notification) => {
             const timeInfo = formatNotificationTime(notification.schedule);
             const location = extractLocationFromBody(notification.body);
-            const bodyWithoutLocation = notification.body.replace(/📍.*/, '').trim();
+            const bodyWithoutLocation = notification.body.replace(/Location:.*|📍.*/, '').trim();
             
             return (
               <Card.Root
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 cursor={notification.extra?.route ? "pointer" : "default"}
+                bg="white"
+                boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+                borderRadius="12px"
                 _hover={notification.extra?.route ? { 
-                  borderColor: "orange.500",
-                  boxShadow: "md"
+                  boxShadow: "0 8px 16px rgba(0,0,0,0.12)",
+                  transform: "translateY(-2px)"
                 } : undefined}
-                transition="all 0.2s"
+                transition="all 0.3s"
               >
                 <Card.Body>
                   <HStack alignItems="flex-start" gap={4}>
                     <Box
                       p={3}
-                      bg={typeof timeInfo === 'object' && timeInfo.isPast ? "gray.100" : "orange.100"}
-                      borderRadius="md"
+                      bg={typeof timeInfo === 'object' && timeInfo.isPast ? "bg" : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"}
+                      borderRadius="lg"
+                      color={typeof timeInfo === 'object' && timeInfo.isPast ? "fg-muted" : "white"}
                     >
                       <Bell 
-                        size={24} 
-                        color={typeof timeInfo === 'object' && timeInfo.isPast ? "#718096" : "#f59e0b"}
+                        size={24}
                       />
                     </Box>
                     
                     <VStack alignItems="flex-start" gap={2} flex={1}>
                       <HStack justifyContent="space-between" width="100%">
-                        <Text fontWeight="bold" fontSize="lg">
+                        <Text fontWeight="bold" fontSize="lg" color="fg">
                           {notification.title}
                         </Text>
                         {typeof timeInfo === 'object' && (
@@ -213,12 +219,12 @@ export default function NotificationsPage() {
                         )}
                       </HStack>
                       
-                      <Text color="gray.700">
+                      <Text color="fg-muted">
                         {bodyWithoutLocation}
                       </Text>
                       
                       {location && (
-                        <HStack color="gray.600" fontSize="sm">
+                        <HStack color="fg-muted" fontSize="sm">
                           <MapPin size={16} />
                           <Text>{location}</Text>
                         </HStack>
@@ -226,7 +232,7 @@ export default function NotificationsPage() {
                       
                       {typeof timeInfo === 'object' && (
                         <HStack 
-                          color="gray.500" 
+                          color="fg-muted" 
                           fontSize="sm"
                           mt={2}
                           gap={4}
@@ -249,6 +255,7 @@ export default function NotificationsPage() {
           })}
         </Stack>
       )}
+      </Box>
     </Box>
   );
 }

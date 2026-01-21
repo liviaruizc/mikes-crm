@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.contractorscrm.app',
-  appName: "Contractor's CRM",
+  appName: "Cliently",
   webDir: 'dist',
   server: {
     // For development, point to your local backend

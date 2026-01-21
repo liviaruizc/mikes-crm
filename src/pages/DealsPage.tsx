@@ -131,28 +131,29 @@ export default function DealsPage() {
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }}>
-      {/* Header */}
-      <Flex justify="space-between" align="center" mb={6}>
-        <VStack align="start" gap={1}>
-          <Heading color="black" fontWeight="500" fontSize="xl">
-            Deals
-          </Heading>
-          <Text color="gray.600" fontSize="16px">
-            Track your sales pipeline
-          </Text>
-        </VStack>
-        <Button
-          bg="#f59e0b"
-          color="black"
-          fontWeight="500"
-          _hover={{ bg: "#d97706" }}
-          transition="colors 0.15s"
-          onClick={() => navigate("/customers")}
-        >
-          + New Deal
-        </Button>
-      </Flex>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        {/* Header */}
+        <Flex justify="space-between" align="center" mb={6}>
+          <VStack align="start" gap={1}>
+            <Heading color="fg" fontWeight="500" fontSize="xl">
+              Deals
+            </Heading>
+            <Text color="fg-muted" fontSize="16px">
+              Track your sales pipeline
+            </Text>
+          </VStack>
+          <Button
+            bg="gold.400"
+            color="black"
+            fontWeight="500"
+            _hover={{ bg: "gold.500" }}
+            transition="colors 0.15s"
+            onClick={() => navigate("/customers")}
+          >
+            + New Deal
+          </Button>
+        </Flex>
 
       {/* Filter */}
       <Flex justify="space-between" align="center" mb={4}>
@@ -286,7 +287,7 @@ export default function DealsPage() {
                   {deal.phone && (
                     <HStack gap={1}>
                       <Text color="#f59e0b" fontSize="0.875rem">
-                        ☎
+Phone
                       </Text>
                       <Text color="gray.600" fontSize="0.875rem" lineClamp={1}>
                         {formatPhoneNumber(deal.phone)}
@@ -502,6 +503,7 @@ export default function DealsPage() {
         }}
         existingCustomer={selectedDeal as any}
       />
+      </Box>
     </Box>
   );
 }

@@ -238,21 +238,22 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" h="calc(100vh - 200px)">
-        <Spinner size="xl" color="gold.300" />
-      </Flex>
+      <Box bg="bg" minH="100vh" display="flex" justifyContent="center" alignItems="center">
+        <Spinner size="xl" color="gold.400" />
+      </Box>
     );
   }
 
   return (
-    <Box>
-      <Heading mb={2} color="gold.300" letterSpacing="wide">
-        Pipeline
-      </Heading>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <Heading mb={2} color="fg" letterSpacing="wide">
+          Pipeline
+        </Heading>
 
-      <Text color="gray.400" mb={8}>
-        Click a card to select it, then click a stage column to move it.
-      </Text>
+        <Text color="fg-muted" mb={8}>
+          Click a card to select it, then click a stage column to move it.
+        </Text>
 
       <SimpleGrid columns={{ base: 1, md: 3, lg: 6 }} gap={4}>
         {STAGES.map((stage) => (
@@ -391,8 +392,7 @@ export default function DashboardPage() {
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>
-      </Dialog.Root>
-    </Box>
+      </Dialog.Root>      </Box>    </Box>
   );
 }
 

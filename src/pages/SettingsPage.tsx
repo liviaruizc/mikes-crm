@@ -28,6 +28,7 @@ import {
   Stack,
   HStack,
   Separator,
+  Flex,
 } from "@chakra-ui/react";
 import { supabase, getCurrentUserId } from "../lib/supabaseClient";
 import { sendTestNotification } from "../lib/notificationService";
@@ -52,6 +53,7 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Load user data on component mount
   useEffect(() => {
@@ -81,8 +83,8 @@ export default function SettingsPage() {
       if (!userId) return;
 
       const { data, error } = await supabase
-        .from("settings")
-        .select("owner_phone")
+        .from("user")
+        .select("full_name, phone")
         .eq("user_id", userId)
         .single();
 
@@ -90,7 +92,8 @@ export default function SettingsPage() {
         // PGRST116 is "no rows returned"
         console.error("Error loading settings:", error);
       } else if (data) {
-        setOwnerPhone(data.owner_phone || "");
+        setDisplayName(data.full_name || "");
+        setOwnerPhone(data.phone || "");
       }
     } catch (err) {
       console.error("Error:", err);
@@ -114,20 +117,9 @@ export default function SettingsPage() {
         return;
       }
 
-      // Update display name in user metadata
-      if (displayName) {
-        const { error: metadataError } = await supabase.auth.updateUser({
-          data: { display_name: displayName }
-        });
-        
-        if (metadataError) {
-          console.error("Error updating display name:", metadataError);
-        }
-      }
-
-      // First check if settings row exists for this user
+      // First check if user row exists for this user
       const { data: existing } = await supabase
-        .from("settings")
+        .from("user")
         .select("id")
         .eq("user_id", userId)
         .single();
@@ -137,14 +129,14 @@ export default function SettingsPage() {
       if (existing) {
         // Update existing row
         ({ error } = await supabase
-          .from("settings")
-          .update({ owner_phone: ownerPhone })
+          .from("user")
+          .update({ full_name: displayName, phone: ownerPhone })
           .eq("id", existing.id));
       } else {
         // Insert new row
         ({ error } = await supabase
-          .from("settings")
-          .insert([{ owner_phone: ownerPhone, user_id: userId }]));
+          .from("user")
+          .insert([{ full_name: displayName, phone: ownerPhone, user_id: userId }]));
       }
 
       if (error) throw error;
@@ -154,6 +146,7 @@ export default function SettingsPage() {
         description: "Profile updated successfully.",
         type: "success",
       });
+      setIsEditing(false);
     } catch (error: any) {
       console.error("Error saving settings:", error);
       toaster.create({
@@ -273,76 +266,133 @@ export default function SettingsPage() {
 
   if (initialLoad) {
     return (
-      <Box p={8}>
-        <Text color="gray.600">Loading settings...</Text>
+      <Box bg="bg" minH="100vh" p={8}>
+        <Box maxW="800px" mx="auto">
+          <Text color="fg-muted">Loading settings...</Text>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }}>
-      <Heading color="black" fontWeight="500" fontSize="2xl" mb={6}>
-        Settings
-      </Heading>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="800px" mx="auto">
+        <Heading color="fg" fontWeight="500" fontSize="2xl" mb={6}>
+          Settings
+        </Heading>
 
       <Stack gap={6} maxW="800px" mx="auto">
         {/* Profile Information */}
         <Card.Root>
           <Card.Header>
-            <HStack>
-              <User size={20} />
-              <Heading size="md">Profile Information</Heading>
-            </HStack>
+            <Flex justify="space-between" align="center">
+              <HStack>
+                <User size={20} />
+                <Heading size="md">Profile Information</Heading>
+              </HStack>
+              {!isEditing && (
+                <Button
+                  size="sm"
+                  bg="transparent"
+                  color="#f59e0b"
+                  border="1px solid"
+                  borderColor="#f59e0b"
+                  fontWeight="500"
+                  _hover={{ bg: "#f59e0b", color: "black" }}
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </Button>
+              )}
+            </Flex>
           </Card.Header>
           <Card.Body>
-            <Stack gap={4}>
-              <Field.Root>
-                <Field.Label fontWeight="500" color="black">
-                  Display Name
-                </Field.Label>
-                <Input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your name"
-                  bg="white"
-                  border="1px solid"
-                  borderColor="gray.300"
-                  color="black"
-                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
-                />
-              </Field.Root>
+            {!isEditing ? (
+              <Stack gap={4}>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Display Name
+                  </Text>
+                  <Text fontSize="md" fontWeight="500" color="black">
+                    {displayName || "Not set"}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Phone Number
+                  </Text>
+                  <Text fontSize="md" fontWeight="500" color="black">
+                    {ownerPhone || "Not set"}
+                  </Text>
+                </Box>
+              </Stack>
+            ) : (
+              <Stack gap={4}>
+                <Field.Root>
+                  <Field.Label fontWeight="500" color="black">
+                    Display Name
+                  </Field.Label>
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your name"
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.300"
+                    color="black"
+                    _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                  />
+                </Field.Root>
 
-              <Field.Root>
-                <Field.Label fontWeight="500" color="black">
-                  Phone Number
-                </Field.Label>
-                <Field.HelperText color="gray.600" mb={2}>
-                  This phone number will receive appointment reminders
-                </Field.HelperText>
-                <Input
-                  value={ownerPhone}
-                  onChange={(e) => setOwnerPhone(e.target.value)}
-                  placeholder="(239) 200-5772"
-                  bg="white"
-                  border="1px solid"
-                  borderColor="gray.300"
-                  color="black"
-                  _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
-                />
-              </Field.Root>
+                <Field.Root>
+                  <Field.Label fontWeight="500" color="black">
+                    Phone Number
+                  </Field.Label>
+                  <Field.HelperText color="gray.600" mb={2}>
+                    This phone number will receive appointment reminders
+                  </Field.HelperText>
+                  <Input
+                    value={ownerPhone}
+                    onChange={(e) => setOwnerPhone(e.target.value)}
+                    placeholder="(239) 200-5772"
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.300"
+                    color="black"
+                    _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                  />
+                </Field.Root>
 
-              <Button
-                bg="#f59e0b"
-                color="black"
-                fontWeight="500"
-                _hover={{ bg: "#d97706" }}
-                onClick={handleSave}
-                loading={loading}
-                w="full"
-              >
-                Save Profile
-              </Button>
-            </Stack>
+                <HStack>
+                  <Button
+                    bg="#f59e0b"
+                    color="black"
+                    fontWeight="500"
+                    _hover={{ bg: "#d97706" }}
+                    onClick={handleSave}
+                    loading={loading}
+                    flex="1"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    bg="transparent"
+                    color="gray.600"
+                    border="1px solid"
+                    borderColor="gray.300"
+                    fontWeight="500"
+                    _hover={{ bg: "gray.100" }}
+                    onClick={() => {
+                      setIsEditing(false);
+                      loadSettings();
+                    }}
+                    flex="1"
+                  >
+                    Cancel
+                  </Button>
+                </HStack>
+              </Stack>
+            )}
           </Card.Body>
         </Card.Root>
 
@@ -482,9 +532,9 @@ export default function SettingsPage() {
               bg="transparent"
               color="#f59e0b"
               border="1px solid"
-              borderColor="#f59e0b"
+              borderColor="gold.400"
               fontWeight="500"
-              _hover={{ bg: "#f59e0b", color: "black" }}
+              _hover={{ bg: "gold.400", color: "black" }}
               onClick={sendTestNotification}
               w="full"
             >
@@ -493,6 +543,7 @@ export default function SettingsPage() {
           </Card.Body>
         </Card.Root>
       </Stack>
+      </Box>
     </Box>
   );
 }

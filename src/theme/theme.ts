@@ -1,4 +1,51 @@
-import { createSystem, defaultConfig } from "@chakra-ui/react";
+import { createSystem, defaultConfig, defineRecipe } from "@chakra-ui/react";
+
+const buttonRecipe = defineRecipe({
+  base: {
+    fontFamily: "'Playfair Display', serif",
+    fontWeight: "400 !important",
+    fontSize: "0.95rem",
+    letterSpacing: "0.01em",
+    transition: "all 0.2s ease",
+    cursor: "pointer",
+    borderRadius: "2px",
+    _focusVisible: {
+      outline: "2px solid",
+      outlineOffset: "2px",
+    },
+  },
+  variants: {
+    visual: {
+      solid: {
+        bg: "gold.400",
+        color: "black",
+        _hover: {
+          bg: "gold.500",
+          transform: "translateY(-1px)",
+        },
+        _active: {
+          transform: "translateY(0)",
+        },
+      },
+    },
+  },
+  defaultVariants: {
+    visual: "solid",
+  },
+});
+
+const cardRecipe = defineRecipe({
+  base: {
+    bg: "white",
+    borderRadius: "12px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+    transition: "all 0.3s",
+    _hover: {
+      boxShadow: "0 8px 16px rgba(0,0,0,0.12)",
+      transform: "translateY(-2px)",
+    },
+  },
+});
 
 export const system = createSystem(defaultConfig, {
   theme: {
@@ -37,6 +84,18 @@ export const system = createSystem(defaultConfig, {
         "2xl": { value: "1.5rem" },
         "3xl": { value: "1.875rem" },
       },
+    },
+    semanticTokens: {
+      colors: {
+        bg: { value: "#f8f9fa" },
+        "bg-muted": { value: "#f3f4f6" },
+        "fg": { value: "#111827" },
+        "fg-muted": { value: "#6b7280" },
+      },
+    },
+    recipes: {
+      button: buttonRecipe,
+      card: cardRecipe,
     },
   },
 });

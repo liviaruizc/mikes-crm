@@ -94,9 +94,9 @@ export default function MapPage() {
             lat: location.lat,
             lng: location.lng,
           });
-          console.log(`✓ Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
+          console.log(`Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
         } else {
-          console.warn(`✗ No geocoding results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
+          console.warn(`No geocoding results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
           if (data.error_message) {
             console.error(`API Error: ${data.error_message}`);
           }
@@ -115,40 +115,44 @@ export default function MapPage() {
 
   if (loading || geocoding) {
     return (
-      <Box>
-        <Heading mb={6} color="black" fontWeight="500" fontSize="xl">
-          Customer Map
-        </Heading>
-        <VStack h="400px" justify="center">
-          <Spinner size="xl" color="#f59e0b" />
-          <Text color="gray.600" fontSize="16px">
-            {geocoding ? "Geocoding addresses... This may take a moment." : "Loading customers..."}
-          </Text>
-        </VStack>
+      <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+        <Box maxW="1400px" mx="auto">
+          <Heading mb={6} color="fg" fontWeight="500" fontSize="xl">
+            Customer Map
+          </Heading>
+          <VStack h="400px" justify="center">
+            <Spinner size="xl" color="gold.400" />
+            <Text color="fg-muted" fontSize="16px">
+              {geocoding ? "Geocoding addresses... This may take a moment." : "Loading customers..."}
+            </Text>
+          </VStack>
+        </Box>
       </Box>
     );
   }
 
   if (customers.length === 0) {
     return (
-      <Box>
-        <Heading mb={6} color="black" fontWeight="500" fontSize="xl">
-          Customer Map
-        </Heading>
-        <Box
-          bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
-          p={8}
-          textAlign="center"
-        >
-          <Text color="gray.600" fontSize="18px">
-            No customers with valid addresses found.
-          </Text>
-          <Text color="gray.400" fontSize="0.875rem" mt={2}>
-            Add addresses to your customers to see them on the map.
-          </Text>
+      <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+        <Box maxW="1400px" mx="auto">
+          <Heading mb={6} color="fg" fontWeight="500" fontSize="xl">
+            Customer Map
+          </Heading>
+          <Box
+            bg="white"
+            border="none"
+            borderRadius="12px"
+            boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+            p={8}
+            textAlign="center"
+          >
+            <Text color="fg" fontSize="18px">
+              No customers with valid addresses found.
+            </Text>
+            <Text color="fg-muted" fontSize="0.875rem" mt={2}>
+              Add addresses to your customers to see them on the map.
+            </Text>
+          </Box>
         </Box>
       </Box>
     );
@@ -163,41 +167,42 @@ export default function MapPage() {
     : customers.reduce((sum, c) => sum + (c.lat || 0), 0) / customers.length;
   const centerLng = filteredCustomers.length > 0
     ? filteredCustomers.reduce((sum, c) => sum + (c.lng || 0), 0) / filteredCustomers.length
-    : customers.reduce((sum, c) => sum + (c.lng || 0), 0) / customers.length;
+      : customers.reduce((sum, c) => sum + (c.lng || 0), 0) / customers.length;
+  
+    return (
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <Heading mb={4} color="fg" fontWeight="500" fontSize="xl">
+          Customer Map
+        </Heading>
 
-  return (
-    <Box>
-      <Heading mb={4} color="black" fontWeight="500" fontSize="xl">
-        Customer Map
-      </Heading>
-
-      <Text color="gray.600" mb={4} fontSize="16px">
-        Showing {filteredCustomers.length} of {customers.length} customer{customers.length !== 1 ? "s" : ""}
-      </Text>
-
-      {/* Filter Controls */}
-      <Box 
-        mb={4} 
-        p={4} 
-        bg="white" 
-        borderRadius="md" 
-        border="1px solid" 
-        borderColor="gray.200"
-        _hover={{ boxShadow: "lg" }}
-        transition="shadow 0.15s"
-      >
-        <Text fontWeight="500" color="black" mb={3} fontSize="16px">
-          Filter by Pipeline Stage:
+        <Text color="fg-muted" mb={4} fontSize="16px">
+          Showing {filteredCustomers.length} of {customers.length} customer{customers.length !== 1 ? "s" : ""}
         </Text>
-        <HStack gap={4} flexWrap="wrap">
-          {Object.entries(STAGE_COLORS).map(([stage, color]) => (
-            <Checkbox.Root
-              key={stage}
-              checked={selectedStages.has(stage as PipelineStage)}
-              onCheckedChange={() => toggleStage(stage as PipelineStage)}
-            >
-              <Checkbox.HiddenInput />
-              <Checkbox.Control borderColor="gray.300" />
+
+        {/* Filter Controls */}
+        <Box 
+          mb={4} 
+          p={4} 
+          bg="white" 
+          borderRadius="12px" 
+          border="none" 
+          boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+          _hover={{ boxShadow: "0 8px 16px rgba(0,0,0,0.12)" }}
+          transition="shadow 0.15s"
+        >
+          <Text fontWeight="500" color="fg" mb={3} fontSize="16px">
+            Filter by Pipeline Stage:
+          </Text>
+          <HStack gap={4} flexWrap="wrap">
+            {Object.entries(STAGE_COLORS).map(([stage, color]) => (
+              <Checkbox.Root
+                key={stage}
+                checked={selectedStages.has(stage as PipelineStage)}
+                onCheckedChange={() => toggleStage(stage as PipelineStage)}
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control borderColor="gray.300" />
               <Checkbox.Label>
                 <HStack gap={2}>
                   <Box w="12px" h="12px" borderRadius="full" bg={color} />
@@ -284,17 +289,17 @@ export default function MapPage() {
                   </h3>
                   {selectedCustomer.phone && (
                     <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                      📞 {selectedCustomer.phone}
+                      {selectedCustomer.phone}
                     </p>
                   )}
                   {selectedCustomer.email && (
                     <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                      ✉️ {selectedCustomer.email}
+                      {selectedCustomer.email}
                     </p>
                   )}
                   {selectedCustomer.address && (
                     <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                      📍 <a 
+                      <a 
                         href={`https://maps.google.com/?q=${encodeURIComponent(selectedCustomer.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -321,7 +326,7 @@ export default function MapPage() {
                   )}
                   {selectedCustomer.estimated_price && (
                     <p style={{ margin: '8px 0 0 0', fontSize: '12px', fontWeight: '500' }}>
-                      💰 ${Number(selectedCustomer.estimated_price).toLocaleString()}
+                      ${Number(selectedCustomer.estimated_price).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -329,6 +334,7 @@ export default function MapPage() {
             )}
           </Map>
         </APIProvider>
+        </Box>
       </Box>
     </Box>
   );

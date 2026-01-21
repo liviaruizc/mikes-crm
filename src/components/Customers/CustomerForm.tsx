@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import { supabase, getCurrentUserId } from "../../lib/supabaseClient";
 import type { Customer } from "../../lib/types";
+import AddressAutocomplete from "./AddressAutocomplete";
 
 export default function CustomerForm({ 
   open, 
@@ -23,6 +24,7 @@ export default function CustomerForm({
 }) {
   const [loadSources, setLeadSources] = useState<any[]>([]);
   const [errors, setErrors] = useState({ full_name: false, phone: false });
+  const [addressSearch, setAddressSearch] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -72,6 +74,7 @@ export default function CustomerForm({
         estimated_price: existingCustomer.estimated_price?.toString() || "",
         pipeline_stage: existingCustomer.pipeline_stage || "New",
       });
+      setAddressSearch(existingCustomer.address || "");
     } else {
       setForm({
         full_name: "",
@@ -88,6 +91,7 @@ export default function CustomerForm({
         estimated_price: "",
         pipeline_stage: "New",
       });
+      setAddressSearch("");
     }
     setErrors({ full_name: false, phone: false });
   }, [existingCustomer, open]);
@@ -174,6 +178,21 @@ export default function CustomerForm({
     }
   }
 
+  function handleAddressSelect(components: {
+    street_address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+  }) {
+    setForm((prev) => ({
+      ...prev,
+      street_address: components.street_address,
+      city: components.city,
+      state: components.state,
+      zip_code: components.zip_code,
+    }));
+  }
+
   return (
     <Dialog.Root open={open} onOpenChange={(e) => e.open ? undefined : onClose()} size="lg">
       <Dialog.Backdrop />
@@ -251,6 +270,19 @@ export default function CustomerForm({
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
                 />
+              </Field.Root>
+
+              <Field.Root>
+                <Field.Label fontWeight="500" color="black">Address Search</Field.Label>
+                <AddressAutocomplete
+                  value={addressSearch}
+                  onChange={setAddressSearch}
+                  onAddressSelect={handleAddressSelect}
+                  placeholder="Start typing an address..."
+                />
+                <Field.HelperText color="gray.600" fontSize="sm">
+                  Start typing to search for an address, or fill in the fields below manually
+                </Field.HelperText>
               </Field.Root>
 
               <Field.Root>

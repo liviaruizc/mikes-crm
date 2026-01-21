@@ -71,21 +71,6 @@ export default function AppointmentFormPage() {
     period: "AM",
   });
 
-  // Generate time slots every 30 minutes in 12-hour format
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 1; hour <= 12; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const h = hour.toString();
-        const m = minute.toString().padStart(2, "0");
-        slots.push(`${h}:${m}`);
-      }
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
-
   // Load customers on mount and pre-select if customerId in URL
   useEffect(() => {
     loadCustomers();
@@ -118,9 +103,12 @@ export default function AppointmentFormPage() {
     else setExistingAppointments(data || []);
   }
 
+  const isValidTimeString = (time: string) => /^(0?\d|1\d|2[0-3]):[0-5]\d$/.test(time);
+
   // Check if a time slot conflicts with existing appointments
   const isTimeSlotAvailable = (date: string, time: string, period: string) => {
     if (!date || !time || !period) return true;
+    if (!isValidTimeString(time)) return true;
 
     // Convert selected time to 24-hour format
     const [hourStr, minuteStr] = time.split(":");
@@ -152,24 +140,66 @@ export default function AppointmentFormPage() {
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     
-    // Auto-fill customer fields when customer is selected
-    if (name === "customer_id" && value) {
-      const selectedCustomer = customers.find(c => c.id === value);
-      if (selectedCustomer) {
-        setForm({
-          ...form,
-          customer_id: value,
-          customer_name: selectedCustomer.full_name || "",
-          customer_phone: selectedCustomer.phone || "",
-          customer_email: selectedCustomer.email || "",
-          customer_address: selectedCustomer.address || "",
-          job_type: selectedCustomer.job_type || "",
-          estimated_price: selectedCustomer.estimated_price?.toString() || "",
-        });
+    setForm((prev) => {
+      // Auto-fill customer fields when customer is selected
+      if (name === "customer_id" && value) {
+        const selectedCustomer = customers.find(c => c.id === value);
+        if (selectedCustomer) {
+          return {
+            ...prev,
+            customer_id: value,
+            customer_name: selectedCustomer.full_name || "",
+            customer_phone: selectedCustomer.phone || "",
+            customer_email: selectedCustomer.email || "",
+            customer_address: selectedCustomer.address || "",
+            job_type: selectedCustomer.job_type || "",
+            estimated_price: selectedCustomer.estimated_price?.toString() || "",
+          };
+        }
       }
-    } else {
-      setForm({ ...form, [name]: value });
-    }
+
+      let nextForm = { ...prev, [name]: value };
+
+      // Normalize period if user enters 24h time (e.g., 13:15)
+      if (name === "time" && isValidTimeString(value)) {
+        const [hourStr] = value.split(":");
+        const hourNum = parseInt(hourStr);
+        if (hourNum >= 12) {
+          nextForm.period = "PM";
+        } else {
+          nextForm.period = "AM";
+        }
+      }
+
+      // Update start_time when date, time, or period changes (only when time format is valid)
+      if (name === "date" || name === "time" || name === "period") {
+        const dateValue = name === "date" ? value : nextForm.date;
+        const timeValue = name === "time" ? value : nextForm.time;
+        const periodValue = name === "period" ? value : nextForm.period;
+        
+        if (dateValue && timeValue && periodValue && isValidTimeString(timeValue)) {
+          const [hourStr, minuteStr] = timeValue.split(":");
+          let hour = parseInt(hourStr);
+          
+          if (periodValue === "PM" && hour !== 12) {
+            hour += 12;
+          } else if (periodValue === "AM" && hour === 12) {
+            hour = 0;
+          }
+          
+          const hour24 = hour.toString().padStart(2, "0");
+          const minute = minuteStr.padStart(2, "0");
+          
+          const localDateTime = `${dateValue}T${hour24}:${minute}:00-05:00`;
+          nextForm = {
+            ...nextForm,
+            start_time: localDateTime,
+          };
+        }
+      }
+
+      return nextForm;
+    });
 
     // Clear error for this field when user starts typing
     if (name === "customer_id" || name === "date" || name === "time") {
@@ -180,65 +210,73 @@ export default function AppointmentFormPage() {
     if (name === "date") {
       loadAppointments();
     }
-
-    // Update start_time when date, time, or period changes
-    if (name === "date" || name === "time" || name === "period") {
-      const dateValue = name === "date" ? value : form.date;
-      const timeValue = name === "time" ? value : form.time;
-      const periodValue = name === "period" ? value : form.period;
-      
-      if (dateValue && timeValue && periodValue) {
-        // Convert 12-hour time to 24-hour format
-        const [hourStr, minuteStr] = timeValue.split(":");
-        let hour = parseInt(hourStr);
-        
-        if (periodValue === "PM" && hour !== 12) {
-          hour += 12;
-        } else if (periodValue === "AM" && hour === 12) {
-          hour = 0;
-        }
-        
-        const hour24 = hour.toString().padStart(2, "0");
-        const minute = minuteStr.padStart(2, "0");
-        
-        // Store as ISO string with explicit timezone offset for NY (EST/EDT)
-        const localDateTime = `${dateValue}T${hour24}:${minute}:00-05:00`;
-        
-        setForm((prev) => ({
-          ...prev,
-          [name]: value,
-          start_time: localDateTime,
-        }));
-      }
-    }
   };
 
   async function handleSubmit() {
+    console.log('=== handleSubmit called ===');
+    console.log('Form data:', form);
+    
     const newErrors = {
       customer_id: !form.customer_id,
       date: !form.date,
       time: !form.time,
     };
     setErrors(newErrors);
+    console.log('Validation errors:', newErrors);
 
     if (newErrors.customer_id || newErrors.date || newErrors.time) {
+      console.log('Validation failed - missing required fields');
       return;
     }
 
+    console.log('Checking time format:', form.time, 'Valid:', isValidTimeString(form.time));
+    if (!isValidTimeString(form.time)) {
+      console.log('Invalid time format');
+      toaster.create({
+        title: "Invalid time",
+        description: "Enter time as hh:mm (e.g., 9:05 or 12:45, or 13:05).",
+        type: "error",
+      });
+      return;
+    }
+
+    console.log('Checking time slot availability');
+    if (!isTimeSlotAvailable(form.date, form.time, form.period)) {
+      console.log('Time slot conflict detected');
+      setLoading(false);
+      alert('This time slot is already taken. Please choose a different time.');
+      toaster.create({
+        title: "Time conflict",
+        description: "Selected time overlaps an existing appointment.",
+        type: "error",
+      });
+      return;
+    }
+
+    console.log('All validations passed, creating appointment...');
     setLoading(true);
 
     // Calculate end time as 1 hour after start time (keep same format with timezone)
-    const [datePart, timeWithTz] = form.start_time.split('T');
-    const [timePart] = timeWithTz.split('-'); // Remove timezone part
-    const [hourStr, minuteStr] = timePart.split(':');
-    let endHour = parseInt(hourStr) + 1;
+    const [hourStr, minuteStrRaw] = form.time.split(":");
+    let startHour = parseInt(hourStr);
+
+    if (form.period === "PM" && startHour !== 12) {
+      startHour += 12;
+    } else if (form.period === "AM" && startHour === 12) {
+      startHour = 0;
+    }
+
+    const startHourPadded = startHour.toString().padStart(2, '0');
+    const startMinute = minuteStrRaw.padStart(2, '0');
+    const startTimeIso = `${form.date}T${startHourPadded}:${startMinute}:00-05:00`;
+
+    let endHour = startHour + 1;
     
     // Handle day overflow
     if (endHour >= 24) {
       endHour = endHour - 24;
     }
-    
-    const endTime = `${datePart}T${endHour.toString().padStart(2, '0')}:${minuteStr}:00-05:00`;
+    const endTime = `${form.date}T${endHour.toString().padStart(2, '0')}:${startMinute}:00-05:00`;
 
     const userId = await getCurrentUserId();
     if (!userId) {
@@ -256,7 +294,7 @@ export default function AppointmentFormPage() {
         customer_id: form.customer_id,
         title: form.title || "Appointment",
         description: form.description,
-        start_time: form.start_time,
+        start_time: startTimeIso,
         end_time: endTime,
         user_id: userId,
       },
@@ -278,7 +316,7 @@ export default function AppointmentFormPage() {
         await scheduleAppointmentNotification(
           data.id,
           selectedCustomer.full_name,
-          new Date(form.start_time),
+          new Date(startTimeIso),
           form.title || "Appointment",
           selectedCustomer.address || undefined
         );
@@ -295,23 +333,24 @@ export default function AppointmentFormPage() {
   }
 
   return (
-    <Box p={8}>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Heading color="black" fontWeight="500" fontSize="xl">
-          New Appointment
-        </Heading>
-        <Button 
-          size="sm" 
-          bg="#f59e0b"
-          color="black"
-          fontWeight="500"
-          _hover={{ bg: "#d97706" }}
-          transition="colors 0.15s"
-          onClick={onOpen}
-        >
-          + New Customer
-        </Button>
-      </Flex>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="800px" mx="auto">
+        <Flex justify="space-between" align="center" mb={6}>
+          <Heading color="fg" fontWeight="500" fontSize="xl">
+            New Appointment
+          </Heading>
+          <Button 
+            size="sm" 
+            bg="gold.400"
+            color="black"
+            fontWeight="500"
+            _hover={{ bg: "gold.500" }}
+            transition="colors 0.15s"
+            onClick={onOpen}
+          >
+            + New Customer
+          </Button>
+        </Flex>
 
       <VStack gap={5} maxW="600px" mx="auto">
 
@@ -554,30 +593,20 @@ export default function AppointmentFormPage() {
           <Field.Label fontWeight="500" color="black">Start Time *</Field.Label>
           <Flex gap={3}>
             <Box flex={2}>
-              <select
+              <Input
                 name="time"
+                placeholder="hh:mm"
                 value={form.time}
                 onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  background: 'white',
-                  border: '1px solid',
-                  borderColor: '#D1D5DB',
-                  borderRadius: '0.375rem',
-                  color: 'black'
-                }}
-              >
-                <option value="">Select time</option>
-                {timeSlots.map((slot) => {
-                  const isAvailable = isTimeSlotAvailable(form.date, slot, form.period);
-                  return (
-                    <option key={slot} value={slot} disabled={!isAvailable}>
-                      {slot} {!isAvailable ? '(Booked)' : ''}
-                    </option>
-                  );
-                })}
-              </select>
+                bg="white"
+                border="1px solid"
+                borderColor="gray.300"
+                color="black"
+                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
+                inputMode="numeric"
+                pattern="^(0?[1-9]|1[0-2]):[0-5][0-9]$"
+                title="Enter time as hh:mm"
+              />
             </Box>
             <Box flex={1}>
               <select
@@ -643,6 +672,7 @@ export default function AppointmentFormPage() {
           loadCustomers();
         }}
       />
+      </Box>
     </Box>
   );
 }

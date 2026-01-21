@@ -96,19 +96,43 @@ export default function HomePage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedMapCustomer, setSelectedMapCustomer] = useState<Customer | null>(null); // For map marker info window
   const [selectedMapAppointment, setSelectedMapAppointment] = useState<Appointment | null>(null); // For map marker info window
+  const [selectedAddressForMaps, setSelectedAddressForMaps] = useState<string | null>(null); // For maps service selection
   const [stats, setStats] = useState<Stats>({
     totalRevenue: 0,
     activeContacts: 0,
     dealsClosed: 0,
     conversionRate: 0,
   });
+  const [userName, setUserName] = useState<string>('');
 
   // Load data on component mount
   useEffect(() => {
     loadTodayAppointments();
     loadCustomers();
     loadStats();
+    loadUserName();
   }, []);
+
+  /**
+   * Load the logged-in user's name
+   */
+  async function loadUserName() {
+    const userId = await getCurrentUserId();
+    if (userId) {
+      const { data, error } = await supabase
+        .from('user')
+        .select('full_name')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!error && data?.full_name) {
+        setUserName(data.full_name);
+      } else {
+        // Fallback to 'Guest' if no name set
+        setUserName('Guest');
+      }
+    }
+  }
 
   /**
    * Load business statistics from database
@@ -187,9 +211,9 @@ export default function HomePage() {
             lat: location.lat,
             lng: location.lng,
           });
-          console.log(`✓ Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
+          console.log(`Geocoded ${customer.full_name}: ${customer.address} -> ${data.results[0].formatted_address}`);
         } else {
-          console.warn(`✗ No results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
+          console.warn(`No results for ${customer.full_name}: ${customer.address} (Status: ${data.status})`);
           if (data.error_message) {
             console.error(`API Error: ${data.error_message}`);
           }
@@ -370,6 +394,20 @@ export default function HomePage() {
     loadTodayAppointments();
   }
 
+  function handleOpenMapsSelection(address: string) {
+    setSelectedAddressForMaps(address);
+  }
+
+  function handleOpenAppleMaps(address: string) {
+    window.location.href = `geo:0,0?q=${encodeURIComponent(address)}`;
+    setSelectedAddressForMaps(null);
+  }
+
+  function handleOpenGoogleMaps(address: string) {
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
+    setSelectedAddressForMaps(null);
+  }
+
   async function geocodeAppointments(appointments: any[]): Promise<Appointment[]> {
     const results: Appointment[] = [];
 
@@ -412,34 +450,34 @@ export default function HomePage() {
   }
 
   return (
-    <Box maxW="1400px" mx="auto">
-      <VStack align="start" gap={1} mb={8}>
-        <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="500" color="black">
-          Welcome to Contractor&apos;s CRM
-        </Text>
-        <Text fontSize={{ base: "md", md: "lg" }} color="gray.600">
-          Manage appointments, customers, and your entire workflow.
-        </Text>
-      </VStack>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        <VStack align="start" gap={1} mb={8}>
+          <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="600" color="fg">
+            Welcome, {userName || 'Guest'}
+          </Text>
+          <Text fontSize={{ base: "md", md: "lg" }} color="fg-muted">
+            Manage appointments, customers, and your entire workflow.
+          </Text>
+        </VStack>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} gap={4} mb={8}>
-        {/* Customers */}
-        <Box
-          bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
-          p={6}
-          cursor="pointer"
-          _hover={{ borderColor: "gray.300" }}
-          transition="border-color 0.15s"
-          onClick={() => navigate("/customers")}
-        >
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} gap={6} mb={8}>
+          {/* Customers */}
           <Box
-            bg="black"
-            color="#f59e0b"
-            w="58px"
-            h="58px"
+            bg="white"
+            borderRadius="12px"
+            p={6}
+            cursor="pointer"
+            boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+            transition="all 0.3s"
+            _hover={{ boxShadow: "0 8px 16px rgba(0,0,0,0.12)", transform: "translateY(-2px)" }}
+            onClick={() => navigate("/customers")}
+          >
+          <Box
+            bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            color="white"
+            w="56px"
+            h="56px"
             borderRadius="lg"
             display="flex"
             alignItems="center"
@@ -448,10 +486,10 @@ export default function HomePage() {
           >
             <Users size={28} strokeWidth={1.5} />
           </Box>
-          <Text color="gray.600" fontSize="sm" mb={1}>
+          <Text color="fg-muted" fontSize="sm" mb={1}>
             Customers
           </Text>
-          <Text color="black" fontSize="lg" fontWeight="500">
+          <Text color="fg" fontSize="lg" fontWeight="600">
             {stats.activeContacts.toLocaleString()} contacts
           </Text>
         </Box>
@@ -459,20 +497,19 @@ export default function HomePage() {
         {/* Pipeline */}
         <Box
           bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
+          borderRadius="12px"
           p={6}
           cursor="pointer"
-          _hover={{ borderColor: "gray.300" }}
-          transition="border-color 0.15s"
+          boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+          transition="all 0.3s"
+          _hover={{ boxShadow: "0 8px 16px rgba(0,0,0,0.12)", transform: "translateY(-2px)" }}
           onClick={() => navigate("/pipeline")}
         >
           <Box
-            bg="black"
-            color="#f59e0b"
-            w="58px"
-            h="58px"
+            bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            color="white"
+            w="56px"
+            h="56px"
             borderRadius="lg"
             display="flex"
             alignItems="center"
@@ -481,10 +518,10 @@ export default function HomePage() {
           >
             <TrendingUp size={28} strokeWidth={1.5} />
           </Box>
-          <Text color="gray.600" fontSize="sm" mb={1}>
+          <Text color="fg-muted" fontSize="sm" mb={1}>
             Pipeline
           </Text>
-          <Text color="black" fontSize="lg" fontWeight="500">
+          <Text color="fg" fontSize="lg" fontWeight="600">
             {stats.conversionRate.toFixed(1)}% conversion
           </Text>
         </Box>
@@ -492,20 +529,19 @@ export default function HomePage() {
         {/* Calendar */}
         <Box
           bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
+          borderRadius="12px"
           p={6}
           cursor="pointer"
-          _hover={{ borderColor: "gray.300" }}
-          transition="border-color 0.15s"
+          boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+          transition="all 0.3s"
+          _hover={{ boxShadow: "0 8px 16px rgba(0,0,0,0.12)", transform: "translateY(-2px)" }}
           onClick={() => navigate("/calendar")}
         >
           <Box
-            bg="black"
-            color="#f59e0b"
-            w="58px"
-            h="58px"
+            bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            color="white"
+            w="56px"
+            h="56px"
             borderRadius="lg"
             display="flex"
             alignItems="center"
@@ -514,10 +550,10 @@ export default function HomePage() {
           >
             <Calendar size={28} strokeWidth={1.5} />
           </Box>
-          <Text color="gray.600" fontSize="sm" mb={1}>
-            Calendar
+          <Text color="fg-muted" fontSize="sm" mb={1}>
+            Appointments
           </Text>
-          <Text color="black" fontSize="lg" fontWeight="500">
+          <Text color="fg" fontSize="lg" fontWeight="600">
             {todayAppointments.length} today
           </Text>
         </Box>
@@ -525,60 +561,56 @@ export default function HomePage() {
         {/* New Appointment */}
         <Box
           bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
+          borderRadius="12px"
           p={6}
           cursor="pointer"
-          _hover={{ borderColor: "gray.300" }}
-          transition="border-color 0.15s"
+          boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+          transition="all 0.3s"
+          _hover={{ boxShadow: "0 8px 16px rgba(0,0,0,0.12)", transform: "translateY(-2px)" }}
           onClick={() => navigate("/appointments/new")}
         >
           <Box
-            bg="black"
-            color="#f59e0b"
-            w="58px"
-            h="58px"
+            bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            color="white"
+            w="56px"
+            h="56px"
             borderRadius="lg"
             display="flex"
             alignItems="center"
             justifyContent="center"
             mb={4}
           >
-            <Plus size={32} strokeWidth={1.5} />
+            <Plus size={28} strokeWidth={1.5} />
           </Box>
-          <Text color="gray.600" fontSize="sm" mb={1}>
-            New Appointment
+          <Text color="fg-muted" fontSize="sm" mb={1}>
+            New
           </Text>
-          <Text color="black" fontSize="lg" fontWeight="500">
-            Schedule now
+          <Text color="fg" fontSize="lg" fontWeight="600">
+            Quick add
           </Text>
         </Box>
-      </SimpleGrid>
+        </SimpleGrid>
 
       {/* Today's Schedule */}
-      <Box mt={{ base: 4, md: 6 }} maxW="700px">
+      <Box mt={{ base: 4, md: 8 }}>
         <Text fontSize="xl" fontWeight="500" color="black" mb={3}>
           Today&apos;s Schedule
         </Text>
         
         <Box
           bg="white"
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="lg"
-          p={{ base: 3, md: 4 }}
+          borderRadius="12px"
+          boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+          p={{ base: 4, md: 5 }}
           minH={{ base: "120px", md: "150px" }}
-          _hover={{ boxShadow: "lg" }}
-          transition="shadow 0.15s"
         >
           {loading ? (
             <VStack justify="center" h={{ base: "120px", md: "150px" }}>
-              <Spinner size="lg" color="#f59e0b" />
+              <Spinner size="lg" color="gold.400" />
             </VStack>
           ) : todayAppointments.length === 0 ? (
             <VStack justify="center" h="120px">
-              <Text color="gray.600" fontSize="16px">
+              <Text color="fg-muted" fontSize="16px">
                 No appointments scheduled for today
               </Text>
             </VStack>
@@ -587,21 +619,21 @@ export default function HomePage() {
               {todayAppointments.map((appt) => (
                 <Box
                   key={appt.id}
-                  p={{ base: 2, md: 3 }}
-                  bg="gray.50"
-                  borderRadius="md"
+                  p={{ base: 3, md: 4 }}
+                  bg="#f8f9fa"
+                  borderRadius="8px"
                   border="1px solid"
-                  borderColor="gray.200"
-                  _hover={{ bg: "gray.100", cursor: "pointer" }}
-                  transition="colors 0.15s"
+                  borderColor="bg-muted"
+                  _hover={{ bg: "gray.100", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}
+                  transition="all 0.2s"
                   onClick={() => handleAppointmentClick(appt)}
                 >
                   <HStack justify="space-between" align="start" flexWrap={{ base: "wrap", sm: "nowrap" }} gap={{ base: 2, sm: 0 }}>
                     <VStack align="start" gap={0} flex={{ base: "1 1 100%", sm: "1" }}>
-                      <Text fontWeight="500" color="black" fontSize="16px">
+                      <Text fontWeight="500" color="fg" fontSize="16px">
                         {appt.customers?.full_name || "Unknown Customer"}
                       </Text>
-                      <Text color="gray.400" fontSize="0.75rem">
+                      <Text color="fg-muted" fontSize="0.75rem">
                         {formatPhoneNumber(appt.customers?.phone)}
                       </Text>
                     </VStack>
@@ -618,21 +650,21 @@ export default function HomePage() {
 
       {/* Customer Map */}
       {customers.length > 0 && (
-        <Box mt={{ base: 4, md: 6 }} maxW="700px">
+        <Box mt={{ base: 4, md: 8 }} maxW="700px">
           <HStack justify="space-between" mb={3}>
-            <Text fontSize="xl" fontWeight="500" color="black">
+            <Text fontSize="xl" fontWeight="500" color="fg">
               {showOnlyToday ? "Today's Appointments" : "Customer Locations"}
             </Text>
             <HStack gap={2}>
               <Button 
                 size="sm"
-                bg={showOnlyToday ? "#f59e0b" : "transparent"}
-                color={showOnlyToday ? "black" : "gray.600"}
+                bg={showOnlyToday ? "gold.400" : "transparent"}
+                color={showOnlyToday ? "black" : "fg-muted"}
                 border={showOnlyToday ? "none" : "1px solid"}
-                borderColor="gray.300"
+                borderColor={showOnlyToday ? "transparent" : "bg-muted"}
                 fontWeight="500"
                 _hover={{
-                  bg: showOnlyToday ? "#d97706" : "gray.100",
+                  bg: showOnlyToday ? "gold.500" : "bg-muted",
                 }}
                 transition="colors 0.15s"
                 onClick={() => setShowOnlyToday(!showOnlyToday)}
@@ -667,13 +699,6 @@ export default function HomePage() {
               )}
               <Button 
                 size="sm"
-                bg="#f59e0b"
-                color="black"
-                fontWeight="500"
-                _hover={{
-                  bg: "#d97706",
-                }}
-                transition="colors 0.15s"
                 onClick={() => navigate("/map")}
               >
                 View Full Map
@@ -683,9 +708,8 @@ export default function HomePage() {
           
           <Box
             bg="white"
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="lg"
+            borderRadius="12px"
+            boxShadow="0 2px 8px rgba(0,0,0,0.08)"
             overflow="hidden"
             h="400px"
           >
@@ -795,30 +819,21 @@ export default function HomePage() {
                       </h3>
                       {selectedMapAppointment.customers?.phone && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          📞 {selectedMapAppointment.customers.phone}
+                          {selectedMapAppointment.customers.phone}
                         </p>
                       )}
                       {selectedMapAppointment.customers?.email && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          ✉️ {selectedMapAppointment.customers.email}
+                          {selectedMapAppointment.customers.email}
                         </p>
                       )}
                       {selectedMapAppointment.customers?.address && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          📍 <a 
+                          <a 
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              const address = encodeURIComponent(selectedMapAppointment.customers!.address!);
-                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                              
-                              if (isMobile) {
-                                // Mobile: use geo: scheme to open default maps app
-                                window.location.href = `geo:0,0?q=${address}`;
-                              } else {
-                                // Desktop: open Google Maps in new tab
-                                window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
-                              }
+                              handleOpenMapsSelection(selectedMapAppointment.customers!.address!);
                             }}
                             style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                           >
@@ -827,7 +842,7 @@ export default function HomePage() {
                         </p>
                       )}
                       <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: '500' }}>
-                        📅 {moment(selectedMapAppointment.start_time).format("MMM D, YYYY h:mm A")}
+                        {moment(selectedMapAppointment.start_time).format("MMM D, YYYY h:mm A")}
                       </p>
                       {selectedMapAppointment.description && (
                         <p style={{ margin: '4px 0', fontSize: '11px', color: '#666' }}>
@@ -850,30 +865,21 @@ export default function HomePage() {
                       </h3>
                       {selectedMapCustomer.phone && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          📞 {selectedMapCustomer.phone}
+                          {selectedMapCustomer.phone}
                         </p>
                       )}
                       {selectedMapCustomer.email && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          ✉️ {selectedMapCustomer.email}
+                          {selectedMapCustomer.email}
                         </p>
                       )}
                       {selectedMapCustomer.address && (
                         <p style={{ margin: '4px 0', fontSize: '12px' }}>
-                          📍 <a 
+                          <a 
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              const address = encodeURIComponent(selectedMapCustomer.address);
-                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                              
-                              if (isMobile) {
-                                // Mobile: use geo: scheme to open default maps app
-                                window.location.href = `geo:0,0?q=${address}`;
-                              } else {
-                                // Desktop: open Google Maps in new tab
-                                window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
-                              }
+                              handleOpenMapsSelection(selectedMapCustomer.address);
                             }}
                             style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
                           >
@@ -904,7 +910,7 @@ export default function HomePage() {
                       )}
                       {selectedMapCustomer.estimated_price && (
                         <p style={{ margin: '8px 0 0 0', fontSize: '12px', fontWeight: '500' }}>
-                          💰 ${Number(selectedMapCustomer.estimated_price).toLocaleString()}
+                          ${Number(selectedMapCustomer.estimated_price).toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -920,9 +926,9 @@ export default function HomePage() {
       <Dialog.Root open={open} onOpenChange={onClose} size="lg">
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="white" color="black" border="1px solid" borderColor="gray.200">
+          <Dialog.Content bg="white" color="fg" border="1px solid" borderColor="bg-muted">
             <Dialog.Header>
-              <Heading size="md" color="black" fontWeight="500">
+              <Heading size="md" color="fg" fontWeight="500">
                 Appointment Details
               </Heading>
             </Dialog.Header>
@@ -932,15 +938,15 @@ export default function HomePage() {
               {selectedAppointment && (
                 <VStack align="start" gap={4}>
                   <Box>
-                    <Text fontWeight="500" color="black">
+                    <Text fontWeight="500" color="fg">
                       Customer:
                     </Text>
-                    <Text color="gray.600">{selectedAppointment.customers?.full_name}</Text>
+                    <Text color="fg-muted">{selectedAppointment.customers?.full_name}</Text>
                   </Box>
 
                   {selectedAppointment.customers?.phone && (
                     <Box>
-                      <Text fontWeight="500" color="black">
+                      <Text fontWeight="500" color="fg">
                         Phone:
                       </Text>
                       <a
@@ -956,7 +962,7 @@ export default function HomePage() {
 
                   {selectedAppointment.customers?.email && (
                     <Box>
-                      <Text fontWeight="500" color="black">
+                      <Text fontWeight="500" color="fg">
                         Email:
                       </Text>
                       <a
@@ -972,7 +978,7 @@ export default function HomePage() {
 
                   {selectedAppointment.customers?.address && (
                     <Box>
-                      <Text fontWeight="500" color="black">
+                      <Text fontWeight="500" color="fg">
                         Address:
                       </Text>
                       <a
@@ -983,19 +989,19 @@ export default function HomePage() {
                         onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                         onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                       >
-                        📍 {selectedAppointment.customers.address}
+                        {selectedAppointment.customers.address}
                       </a>
                     </Box>
                   )}
 
                   <Box>
-                    <Text fontWeight="500" color="black">
+                    <Text fontWeight="500" color="fg">
                       Date:
                     </Text>
-                    <Text color="gray.600">
+                    <Text color="fg-muted">
                       {moment(selectedAppointment.start_time).format("MMMM D, YYYY")}
                     </Text>
-                    <Text color="gray.400" fontSize="0.875rem">
+                    <Text color="fg-muted" fontSize="0.875rem">
                       {moment(selectedAppointment.start_time).tz("America/New_York").format("h:mm A")} -{" "}
                       {moment(selectedAppointment.end_time).tz("America/New_York").format("h:mm A")}
                     </Text>
@@ -1003,19 +1009,19 @@ export default function HomePage() {
 
                   {selectedAppointment.description && (
                     <Box>
-                      <Text fontWeight="500" color="black">
+                      <Text fontWeight="500" color="fg">
                         Description:
                       </Text>
-                      <Text color="gray.600">{selectedAppointment.description}</Text>
+                      <Text color="fg-muted">{selectedAppointment.description}</Text>
                     </Box>
                   )}
 
                   {selectedAppointment.customers?.notes && (
                     <Box>
-                      <Text fontWeight="500" color="black">
+                      <Text fontWeight="500" color="fg">
                         Customer Notes:
                       </Text>
-                      <Text color="gray.600">{selectedAppointment.customers.notes}</Text>
+                      <Text color="fg-muted">{selectedAppointment.customers.notes}</Text>
                     </Box>
                   )}
                 </VStack>
@@ -1026,9 +1032,9 @@ export default function HomePage() {
               <Flex gap={2} justify="space-between" w="full">
                 <Button 
                   variant="ghost"
-                  color="gray.600"
+                  color="fg-muted"
                   size="sm"
-                  _hover={{ bg: "gray.100" }}
+                  _hover={{ bg: "bg-muted" }}
                   onClick={onClose}
                 >
                   Close
@@ -1053,7 +1059,7 @@ export default function HomePage() {
                       }
                     }}
                   >
-                    📅 Add to Calendar
+                    Add to Calendar
                   </Button>
                   <Button 
                     variant="ghost"
@@ -1091,6 +1097,53 @@ export default function HomePage() {
           </Dialog.Content>
         </Dialog.Positioner>
       </Dialog.Root>
+
+      {/* Maps Selection Dialog */}
+      <Dialog.Root
+        open={!!selectedAddressForMaps}
+        onOpenChange={(e) => !e.open && setSelectedAddressForMaps(null)}
+      >
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content bg="gray.900" color="white" maxW="md">
+            <Dialog.Header>
+              <Dialog.Title>Choose Maps Service</Dialog.Title>
+            </Dialog.Header>
+
+            <Dialog.Body>
+              <Text mb={4}>Select which maps app to open:</Text>
+              <Text fontSize="sm" color="gray.400" mb={4} wordBreak="break-word">
+                {selectedAddressForMaps}
+              </Text>
+            </Dialog.Body>
+
+            <Dialog.Footer>
+              <HStack gap={2}>
+                <Button
+                  variant="outline"
+                  color="white"
+                  onClick={() => setSelectedAddressForMaps(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  colorScheme="blue"
+                  onClick={() => selectedAddressForMaps && handleOpenAppleMaps(selectedAddressForMaps)}
+                >
+                  Apple Maps
+                </Button>
+                <Button
+                  colorScheme="blue"
+                  onClick={() => selectedAddressForMaps && handleOpenGoogleMaps(selectedAddressForMaps)}
+                >
+                  Google Maps
+                </Button>
+              </HStack>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
     </Box>
+  </Box>
   );
 }

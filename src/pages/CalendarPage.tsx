@@ -213,38 +213,39 @@ export default function CalendarPage() {
   }
 
   return (
-    <Box p={{ base: 4, md: 8 }}>
-      {/* HEADER */}
-      <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={3}>
-        <Heading color="black" fontWeight="500" fontSize="xl">Calendar</Heading>
+    <Box bg="bg" minH="100vh" p={{ base: 4, md: 8 }}>
+      <Box maxW="1400px" mx="auto">
+        {/* HEADER */}
+        <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={3}>
+          <Heading color="fg" fontWeight="500" fontSize="xl">Calendar</Heading>
 
-        <Button
-          bg="#f59e0b"
-          color="black"
-          fontWeight="500"
-          size={{ base: "sm", md: "md" }}
-          _hover={{ bg: "#d97706" }}
-          transition="colors 0.15s"
-          onClick={() => navigate("/appointments/new")}
-        >
-          + New Appointment
-        </Button>
-      </Flex>
-
-      {/* CALENDAR */}
-      {loading ? (
-        <Flex justify="center" mt={10}>
-          <Spinner size="xl" color="#f59e0b" />
+          <Button
+            bg="gold.400"
+            color="black"
+            fontWeight="500"
+            size={{ base: "sm", md: "md" }}
+            _hover={{ bg: "gold.500" }}
+            transition="colors 0.15s"
+            onClick={() => navigate("/appointments/new")}
+          >
+            + New Appointment
+          </Button>
         </Flex>
-      ) : (
-        <Box
-          bg="white"
-          p={{ base: 2, md: 5 }}
-          borderRadius="lg"
-          border="1px solid"
-          borderColor="gray.200"
-          overflowX={{ base: "auto", md: "visible" }}
-        >
+
+        {/* CALENDAR */}
+        {loading ? (
+          <Flex justify="center" mt={10}>
+            <Spinner size="xl" color="gold.400" />
+          </Flex>
+        ) : (
+          <Box
+            bg="white"
+            p={{ base: 2, md: 5 }}
+            borderRadius="12px"
+            border="none"
+            boxShadow="0 2px 8px rgba(0,0,0,0.08)"
+            overflowX={{ base: "auto", md: "visible" }}
+          >
           <Calendar
             localizer={localizer}
             events={events}
@@ -294,7 +295,7 @@ export default function CalendarPage() {
                 border: "none",
               },
             })}
-          />
+        />
         </Box>
       )}
 
@@ -362,7 +363,7 @@ export default function CalendarPage() {
                         onMouseEnter={(e: any) => e.currentTarget.style.textDecoration = "underline"}
                         onMouseLeave={(e: any) => e.currentTarget.style.textDecoration = "none"}
                       >
-                        📍 {selectedEvent.customer.address}
+                        {selectedEvent.customer.address}
                       </a>
                     </Box>
                   )}
@@ -438,7 +439,7 @@ export default function CalendarPage() {
                       }
                     }}
                   >
-                    📅 Add to Calendar
+                    Add to Calendar
                   </Button>
                   <Button 
                     bg="#f59e0b"
@@ -466,6 +467,8 @@ export default function CalendarPage() {
           </Dialog.Content>
         </Dialog.Positioner>
       </Dialog.Root>
+
+      </Box>
     </Box>
   );
 }
