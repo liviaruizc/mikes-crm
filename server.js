@@ -308,9 +308,10 @@ cron.schedule("* * * * *", () => {
 });
 
 // Catch-all route for SPA (must be after API routes)
-app.get('/:path(*)', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
+
 
 // Run on startup
 console.log(" Reminder system initialized. Checking for appointments...");
