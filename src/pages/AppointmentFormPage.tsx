@@ -68,7 +68,6 @@ export default function AppointmentFormPage() {
     start_time: "",
     date: "",
     time: "",
-    period: "AM",
   });
 
   // Load customers on mount and pre-select if customerId in URL
@@ -103,22 +102,28 @@ export default function AppointmentFormPage() {
     else setExistingAppointments(data || []);
   }
 
-  const isValidTimeString = (time: string) => /^(0?\d|1\d|2[0-3]):[0-5]\d$/.test(time);
+  // Generate 30-minute time slots from 7 AM to 7 PM
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 7; hour <= 19; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        if (hour === 19 && minute > 0) break; // Stop at 7:00 PM
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const period = hour >= 12 ? "PM" : "AM";
+        const timeStr = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+        const valueStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push({ display: timeStr, value: valueStr });
+      }
+    }
+    return slots;
+  };
 
   // Check if a time slot conflicts with existing appointments
-  const isTimeSlotAvailable = (date: string, time: string, period: string) => {
-    if (!date || !time || !period) return true;
-    if (!isValidTimeString(time)) return true;
+  const isTimeSlotAvailable = (date: string, timeValue: string) => {
+    if (!date || !timeValue) return true;
 
-    // Convert selected time to 24-hour format
-    const [hourStr, minuteStr] = time.split(":");
-    let hour = parseInt(hourStr);
-    
-    if (period === "PM" && hour !== 12) {
-      hour += 12;
-    } else if (period === "AM" && hour === 12) {
-      hour = 0;
-    }
+    const [hourStr, minuteStr] = timeValue.split(":");
+    const hour = parseInt(hourStr);
     
     const selectedStart = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minuteStr}:00`);
     const selectedEnd = new Date(selectedStart.getTime() + 60 * 60 * 1000); // +1 hour
@@ -160,32 +165,14 @@ export default function AppointmentFormPage() {
 
       let nextForm = { ...prev, [name]: value };
 
-      // Normalize period if user enters 24h time (e.g., 13:15)
-      if (name === "time" && isValidTimeString(value)) {
-        const [hourStr] = value.split(":");
-        const hourNum = parseInt(hourStr);
-        if (hourNum >= 12) {
-          nextForm.period = "PM";
-        } else {
-          nextForm.period = "AM";
-        }
-      }
-
-      // Update start_time when date, time, or period changes (only when time format is valid)
-      if (name === "date" || name === "time" || name === "period") {
+      // Update start_time when date or time changes
+      if (name === "date" || name === "time") {
         const dateValue = name === "date" ? value : nextForm.date;
         const timeValue = name === "time" ? value : nextForm.time;
-        const periodValue = name === "period" ? value : nextForm.period;
         
-        if (dateValue && timeValue && periodValue && isValidTimeString(timeValue)) {
+        if (dateValue && timeValue) {
           const [hourStr, minuteStr] = timeValue.split(":");
-          let hour = parseInt(hourStr);
-          
-          if (periodValue === "PM" && hour !== 12) {
-            hour += 12;
-          } else if (periodValue === "AM" && hour === 12) {
-            hour = 0;
-          }
+          const hour = parseInt(hourStr);
           
           const hour24 = hour.toString().padStart(2, "0");
           const minute = minuteStr.padStart(2, "0");
@@ -231,19 +218,8 @@ export default function AppointmentFormPage() {
       return;
     }
 
-    console.log('Checking time format:', form.time, 'Valid:', isValidTimeString(form.time));
-    if (!isValidTimeString(form.time)) {
-      console.log('Invalid time format');
-      toaster.create({
-        title: "Invalid time",
-        description: "Enter time as hh:mm (e.g., 9:05 or 12:45, or 13:05).",
-        type: "error",
-      });
-      return;
-    }
-
     console.log('Checking time slot availability');
-    if (!isTimeSlotAvailable(form.date, form.time, form.period)) {
+    if (!isTimeSlotAvailable(form.date, form.time)) {
       console.log('Time slot conflict detected');
       setLoading(false);
       alert('This time slot is already taken. Please choose a different time.');
@@ -258,28 +234,16 @@ export default function AppointmentFormPage() {
     console.log('All validations passed, creating appointment...');
     setLoading(true);
 
-    // Calculate end time as 1 hour after start time (keep same format with timezone)
-    const [hourStr, minuteStrRaw] = form.time.split(":");
-    let startHour = parseInt(hourStr);
-
-    if (form.period === "PM" && startHour !== 12) {
-      startHour += 12;
-    } else if (form.period === "AM" && startHour === 12) {
-      startHour = 0;
-    }
+    // Calculate end time as 1 hour after start time
+    const [hourStr, minuteStr] = form.time.split(":");
+    const startHour = parseInt(hourStr);
 
     const startHourPadded = startHour.toString().padStart(2, '0');
-    const startMinute = minuteStrRaw.padStart(2, '0');
+    const startMinute = minuteStr.padStart(2, '0');
     // Build local Date from input and store as UTC ISO (handles DST)
     const startLocal = new Date(`${form.date}T${startHourPadded}:${startMinute}:00`);
     const startTimeIso = startLocal.toISOString();
 
-    let endHour = startHour + 1;
-    
-    // Handle day overflow
-    if (endHour >= 24) {
-      endHour = endHour - 24;
-    }
     const endLocal = new Date(startLocal.getTime() + 60 * 60 * 1000);
     const endTime = endLocal.toISOString();
 
@@ -596,43 +560,39 @@ export default function AppointmentFormPage() {
         {/* START TIME */}
         <Field.Root required w="full" invalid={errors.time}>
           <Field.Label fontWeight="500" color="black">Start Time *</Field.Label>
-          <Flex gap={3}>
-            <Box flex={2}>
-              <Input
-                name="time"
-                placeholder="hh:mm"
-                value={form.time}
-                onChange={handleChange}
-                bg="white"
-                border="1px solid"
-                borderColor="gray.300"
-                color="black"
-                _focus={{ borderColor: "#f59e0b", boxShadow: "0 0 0 1px #f59e0b" }}
-                inputMode="numeric"
-                pattern="^(0?[1-9]|1[0-2]):[0-5][0-9]$"
-                title="Enter time as hh:mm"
-              />
-            </Box>
-            <Box flex={1}>
-              <select
-                name="period"
-                value={form.period}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  background: 'white',
-                  border: '1px solid',
-                  borderColor: '#D1D5DB',
-                  borderRadius: '0.375rem',
-                  color: 'black'
-                }}
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
-            </Box>
-          </Flex>
+          <select
+            name="time"
+            value={form.time}
+            onChange={handleChange}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              background: 'white',
+              border: '1px solid',
+              borderColor: errors.time ? '#e53e3e' : '#D1D5DB',
+              borderRadius: '0.375rem',
+              color: 'black',
+              fontSize: '1rem'
+            }}
+          >
+            <option value="">Select a time</option>
+            {generateTimeSlots().map((slot) => {
+              const available = isTimeSlotAvailable(form.date, slot.value);
+              return (
+                <option 
+                  key={slot.value} 
+                  value={slot.value}
+                  disabled={!available}
+                  style={{ 
+                    color: available ? 'black' : '#999',
+                    fontWeight: available ? 'normal' : 'normal'
+                  }}
+                >
+                  {slot.display} {!available ? '(Not Available)' : ''}
+                </option>
+              );
+            })}
+          </select>
           {errors.time && (
             <Field.ErrorText color="red.600">Time is required</Field.ErrorText>
           )}
